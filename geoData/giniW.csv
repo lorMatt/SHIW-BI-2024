@@ -1,0 +1,190 @@
+year,stratum,value,rank,rank5
+2000,Abruzzo,56.61,7,2
+2002,Abruzzo,55.42,7,2
+2004,Abruzzo,57.25,9,3
+2008,Abruzzo,60.09,14,4
+2010,Abruzzo,53.6,3,1
+2012,Abruzzo,68.38,18,5
+2014,Abruzzo,47.4,2,1
+2016,Abruzzo,60.32,12,3
+2020,Abruzzo,59.73,9,3
+2000,Basilicata,49.9,1,1
+2002,Basilicata,68.95,18,5
+2004,Basilicata,54.32,3,1
+2008,Basilicata,62.06,15,4
+2010,Basilicata,69.35,18,5
+2012,Basilicata,57.02,6,2
+2014,Basilicata,58.46,10,3
+2016,Basilicata,58.94,11,3
+2020,Basilicata,70.14,20,5
+2000,Calabria,52.37,3,1
+2002,Calabria,56.75,10,3
+2004,Calabria,59.73,14,4
+2008,Calabria,56.84,8,2
+2010,Calabria,55.04,5,2
+2012,Calabria,72.18,20,5
+2014,Calabria,55.09,4,1
+2016,Calabria,52.26,2,1
+2020,Calabria,57.51,7,2
+2000,Campania,67.06,18,5
+2002,Campania,70.46,20,5
+2004,Campania,67.58,20,5
+2008,Campania,68.91,20,5
+2010,Campania,67.64,17,5
+2012,Campania,69.64,19,5
+2014,Campania,71.79,20,5
+2016,Campania,66.8,20,5
+2020,Campania,68.75,18,5
+2000,Emilia-Romagna,61.08,12,3
+2002,Emilia-Romagna,54.68,6,2
+2004,Emilia-Romagna,61.7,16,4
+2008,Emilia-Romagna,57.63,9,3
+2010,Emilia-Romagna,58.6,11,3
+2012,Emilia-Romagna,61.14,10,3
+2014,Emilia-Romagna,61.38,14,4
+2016,Emilia-Romagna,65.19,18,5
+2020,Emilia-Romagna,63.09,10,3
+2000,Friuli-Venezia Giulia,53.67,6,2
+2002,Friuli-Venezia Giulia,52.26,3,1
+2004,Friuli-Venezia Giulia,55.26,5,2
+2008,Friuli-Venezia Giulia,56.57,6,2
+2010,Friuli-Venezia Giulia,61.16,14,4
+2012,Friuli-Venezia Giulia,60.16,8,2
+2014,Friuli-Venezia Giulia,60.48,13,4
+2016,Friuli-Venezia Giulia,58.28,9,3
+2020,Friuli-Venezia Giulia,65,12,3
+2000,Lazio,62.57,15,4
+2002,Lazio,63.41,16,4
+2004,Lazio,59.52,13,4
+2008,Lazio,57.8,10,3
+2010,Lazio,64.56,16,4
+2012,Lazio,61.08,9,3
+2014,Lazio,65.03,17,5
+2016,Lazio,63.97,16,4
+2020,Lazio,68.41,16,4
+2000,Liguria,61.06,11,3
+2002,Liguria,56.56,9,3
+2004,Liguria,60.38,15,4
+2008,Liguria,59.67,12,3
+2010,Liguria,56.49,8,2
+2012,Liguria,62.14,11,3
+2014,Liguria,57.41,8,2
+2016,Liguria,60.93,13,4
+2020,Liguria,66.65,13,4
+2000,Lombardia,64.61,17,5
+2002,Lombardia,60.62,14,4
+2004,Lombardia,56.54,7,2
+2008,Lombardia,62.45,16,4
+2010,Lombardia,62.97,15,4
+2012,Lombardia,68.1,17,5
+2014,Lombardia,63.82,15,4
+2016,Lombardia,64.26,17,5
+2020,Lombardia,67.39,15,4
+2000,Marche,53.35,5,2
+2002,Marche,53.33,5,2
+2004,Marche,55.5,6,2
+2008,Marche,52.59,4,1
+2010,Marche,53.51,2,1
+2012,Marche,56.6,5,2
+2014,Marche,55.77,5,2
+2016,Marche,55.25,4,1
+2020,Marche,51.81,2,1
+2000,Molise,61.09,13,4
+2002,Molise,56.17,8,2
+2004,Molise,52.49,2,1
+2008,Molise,52.09,3,1
+2010,Molise,54.89,4,1
+2012,Molise,44.95,1,1
+2014,Molise,46.74,1,1
+2016,Molise,55.85,5,2
+2020,Molise,50.9,1,1
+2000,Piemonte,60.83,10,3
+2002,Piemonte,57.66,11,3
+2004,Piemonte,59.13,11,3
+2008,Piemonte,59.79,13,4
+2010,Piemonte,56.04,7,2
+2012,Piemonte,64.19,12,3
+2014,Piemonte,64.71,16,4
+2016,Piemonte,63.49,15,4
+2020,Piemonte,68.67,17,5
+2000,Puglia,57.47,8,2
+2002,Puglia,60.94,15,4
+2004,Puglia,61.91,17,5
+2008,Puglia,66.85,19,5
+2010,Puglia,57.74,10,3
+2012,Puglia,65.04,14,4
+2014,Puglia,56.48,6,2
+2016,Puglia,57.48,8,2
+2020,Puglia,54.95,6,2
+2000,Sardegna,53.09,4,1
+2002,Sardegna,49.78,1,1
+2004,Sardegna,57.1,8,2
+2008,Sardegna,55.23,5,2
+2010,Sardegna,55.61,6,2
+2012,Sardegna,57.77,7,2
+2014,Sardegna,58.46,11,3
+2016,Sardegna,56.45,6,2
+2020,Sardegna,53.13,4,1
+2000,Sicilia,67.3,19,5
+2002,Sicilia,64.57,17,5
+2004,Sicilia,65.01,19,5
+2008,Sicilia,65.46,18,5
+2010,Sicilia,69.96,19,5
+2012,Sicilia,67.21,15,4
+2014,Sicilia,65.66,18,5
+2016,Sicilia,66.53,19,5
+2020,Sicilia,69.67,19,5
+2000,Toscana,58.39,9,3
+2002,Toscana,52.94,4,1
+2004,Toscana,54.35,4,1
+2008,Toscana,56.65,7,2
+2010,Toscana,60.45,13,4
+2012,Toscana,54,3,1
+2014,Toscana,53.81,3,1
+2016,Toscana,53.13,3,1
+2020,Toscana,58.74,8,2
+2000,Trentino-Alto Adige,64.18,16,4
+2002,Trentino-Alto Adige,70.2,19,5
+2004,Trentino-Alto Adige,59.46,12,3
+2008,Trentino-Alto Adige,59.63,11,3
+2010,Trentino-Alto Adige,58.97,12,3
+2012,Trentino-Alto Adige,64.65,13,4
+2014,Trentino-Alto Adige,57.53,9,3
+2016,Trentino-Alto Adige,58.54,10,3
+2020,Trentino-Alto Adige,63.62,11,3
+2000,Umbria,50.19,2,1
+2002,Umbria,51.32,2,1
+2004,Umbria,46.51,1,1
+2008,Umbria,49.29,2,1
+2010,Umbria,56.98,9,3
+2012,Umbria,56.52,4,1
+2014,Umbria,60.17,12,3
+2016,Umbria,56.82,7,2
+2020,Umbria,53.92,5,2
+2000,Val d’Aosta,71.53,20,5
+2002,Val d’Aosta,59.28,13,4
+2004,Val d’Aosta,57.99,10,3
+2008,Val d’Aosta,48.24,1,1
+2010,Val d’Aosta,47.05,1,1
+2012,Val d’Aosta,53.48,2,1
+2014,Val d’Aosta,56.86,7,2
+2016,Val d’Aosta,39.94,1,1
+2020,Val d’Aosta,52.8,3,1
+2000,Veneto,61.4,14,4
+2002,Veneto,58.64,12,3
+2004,Veneto,62.78,18,5
+2008,Veneto,64.65,17,5
+2010,Veneto,71.79,20,5
+2012,Veneto,67.8,16,4
+2014,Veneto,65.68,19,5
+2016,Veneto,62.29,14,4
+2020,Veneto,66.98,14,4
+2000,Italia,64.04374960526407,NA,NA
+2002,Italia,62.095146520499654,NA,NA
+2004,Italia,61.723951846405825,NA,NA
+2008,Italia,63.18463426546417,NA,NA
+2010,Italia,64.41083095455298,NA,NA
+2012,Italia,65.70311738184536,NA,NA
+2014,Italia,63.44487261772856,NA,NA
+2016,Italia,63.49453697968577,NA,NA
+2020,Italia,66.39966713555836,NA,NA
