@@ -3,7 +3,8 @@ library(tidyverse)
 library(laeken)
 library(MetBrewer)
 library(sf)
-library('ggiraph')
+library(ggiraph)
+library(survey)
 # import pdata
 pdata <- readRDS('SHIWpdata')
 # Inequality indexes -----------------------------------------------------------
@@ -98,7 +99,7 @@ write_csv(giniW, file = 'geoData/giniW.csv')
 
 
 
-# Poverty indexes --------------------------------------------------------------
+# Poverty  ---------------------------------------------------------------------
 
 ## Head count ----
 ### Over region by year
@@ -129,7 +130,7 @@ pov |>
 pdata |> 
   group_by(anno) |> 
   summarise(povLine = weightedMedian(eqhincome,
-                                     weights = pesopop)*0.6) -> povLine
+                                     weights = peso)*0.6) -> povLine
 pov <- left_join(pov, povLine)
 rm(povLine)
 
@@ -149,6 +150,62 @@ pov |>
     rankPovGap = 21-rank(povGapIndex)
   ) -> pov
 
+## LPM risk of being in poverty ----
+pdata <- within(pdata, cfedu <- relevel(factor(cfedu), ref = 'Specializzazione post-laurea'))
+pdata <- within(pdata, cfsex <- relevel(factor(cfsex), ref = 'Maschile'))
+pdataReg <- pdata |> 
+  filter(anno == 2020)
+
+table(pdataReg$pov, useNA = 'always')
+### Regression models
+lpm0 <- lm(pov ~ factor(cfedu),
+   weights = pesopop,
+   data = pdataReg)
+lpm1 <- lm(pov ~ factor(cfedu) + factor(cfsex) + factor(cfclass),
+           weights = pesopop,
+           data = pdataReg)
+
+summary(lpm0)
+summary(lpm1)
+
+### Harvesting results
+lpm0results <- as_tibble(summary(lpm0)[["coefficients"]])
+lpm0results <- cbind(lpm0results, confint(lpm0, level=0.95)) #adding CIs
+
+lpm1results <- as_tibble(summary(lpm1)[["coefficients"]])
+lpm1results <- cbind(lpm1results, confint(lpm1, level=0.95)) #adding CIs
+lpm0results <- lpm0results %>% setNames(paste0('0.', names(.)))
+
+### Cleaning results
+lpm0results <- lpm0results |> 
+  rownames_to_column(var = 'reg')
+lpm1results <- lpm1results |> 
+  rownames_to_column(var = 'reg')
+
+lpmresults <- full_join(lpm0results, lpm1results)
+rm(lpm0results, lpm1results, lpm0, lpm1)
+
+lpmresults['reg'][lpmresults['reg'] == '(Intercept)'] <- ')Intercept'
+
+lpmresults <- lpmresults |> 
+  mutate(reg = str_split_fixed(reg, fixed(')'), n = Inf)) 
+
+lpmresults <- within(lpmresults, reg <- reg[,2])
+
+lpmresults$'0.star' <- ifelse(lpmresults$`0.Pr(>|t|)` <= 0.001, '***',
+                            ifelse(lpmresults$`0.Pr(>|t|)` <= 0.01, '**',
+                                   ifelse(lpmresults$`0.Pr(>|t|)` <= 0.05, '*',
+                                          ifelse(lpmresults$`0.Pr(>|t|)` <= 0.1, '.', ''))))
+
+lpmresults$star<- ifelse(lpmresults$`Pr(>|t|)` <= 0.001, '***',
+                              ifelse(lpmresults$`Pr(>|t|)` <= 0.01, '**',
+                                     ifelse(lpmresults$`Pr(>|t|)` <= 0.05, '*',
+                                            ifelse(lpmresults$`Pr(>|t|)` <= 0.1, '.', ''))))
+
+lpmresults <- lpmresults |> 
+  relocate('0.star', .before = Estimate)
+
+lpmresults$vars <- c('Intercetta', 'Titolo di studio', 'Titolo di studio', 'Titolo di studio', 'Titolo di studio', 'Titolo di studio', 'Sesso', 'Settore economico dell\'occupazione principale', 'Settore economico dell\'occupazione principale', 'Settore economico dell\'occupazione principale', 'Settore economico dell\'occupazione principale', 'Settore economico dell\'occupazione principale', 'Settore economico dell\'occupazione principale', 'Settore economico dell\'occupazione principale', 'Settore economico dell\'occupazione principale', 'Settore economico dell\'occupazione principale')
 # Dataviz ----------------------------------------------------------------------
 
 ## Inequality ----
@@ -495,3 +552,24 @@ pov |>
 
 ggsave('img/plots/povGapRank.jpeg', width = 10, height = 5)
 
+lpmresults |> 
+  rownames()
+#### LPM margins plot ----
+lpmresults$vars <- factor(lpmresults$vars, levels=unique(lpmresults$vars))
+lpmresults |> 
+  ggplot(aes(x=Estimate, y=reg, colour = vars)) +
+  geom_point() +
+  geom_linerange(aes(xmin=`2.5 %`,xmax=`97.5 %`)) +
+  geom_vline(xintercept = 0,
+             linewidth = 0.3,
+             color = 'gray70') +
+  scale_y_discrete(limits = unique(lpmresults$reg)) +
+  labs(x = NULL, y = NULL) +
+  theme_minimal(base_family = 'Helvetica') +
+  theme(panel.grid = element_line(),
+        legend.title = element_blank(),
+        legend.position = 'bottom',
+        legend.text = element_text(hjust = .5),
+        axis.text = element_text())
+# plot solamente titolo di studio, il resto da tenere come controllo. GGiraph: 
+# hover tooltip con il valore di probabilità 

@@ -275,7 +275,7 @@ ggsave('img/plots/incGiniRank.jpeg', width = 10, height = 5)
 
 ## Diseguaglianze di ricchezza
 
-### Mappatura 
+### Mappatura
 
 ```{r}
 #| label: wGini map
