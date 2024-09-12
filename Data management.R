@@ -99,7 +99,17 @@ pdata |>
   select(cfedu, cfedu, cfeur, studio) |> 
   print(n = 50) # checking for mistakes
 
-var_lab(pdata$cfedu) = 'Livello di istruzione del capofamiglia Eurostat'
+pdata |> 
+  mutate(cfedu = case_match(cfedu,
+                    1 ~ 'Nessuno',
+                    2 ~ 'Licenza elementare',
+                    3 ~ 'Medie inferiori',
+                    4 ~ 'Medie superiori',
+                    5 ~ 'Laurea',
+                    6 ~ 'Specializzazione post-laurea'
+  )) -> pdata
+
+var_lab(pdata$cfedu) = 'Titolo di studio del capofamiglia Eurostat'
 
 ## Sex
 pdata$cfsex <- ifelse(pdata$cfeur == 1, pdata$sesso, 0) ## HH head's sex
@@ -107,32 +117,36 @@ pdata$cfsex <- ifelse(pdata$cfeur == 1, pdata$sesso, 0) ## HH head's sex
 pdata |> 
   group_by(anno, nquest) |> 
   mutate(cfsex = max(cfsex)) -> pdata
-
 pdata |> 
-  select(cfeur, cfsex)
+  mutate(cfsex = case_match(cfsex,
+                            1 ~ 'Maschile',
+                            2 ~ 'Femminile'
+                            )) -> pdata
 
 var_lab(pdata$cfsex) = 'Sesso del capofamiglia Eurostat'
 
 ## Occupational class
-pdata$cfclass <- ifelse(pdata$cfeur == 1, pdata$qualp10, 0)
+pdata$cfclass <- ifelse(pdata$cfeur == 1, pdata$settp11, 0)
 
 pdata |> 
   group_by(nquest, anno) |> 
   mutate(cfclass = max(cfclass)) -> pdata
 
-var_lab(pdata$cfclass) = 'HH head occupational class'
+pdata |> 
+mutate(cfclass = case_match(cfclass,
+                            1 ~ 'Agricoltura',
+                            2 ~ 'Industria',
+                            3 ~ 'Costruzioni',
+                            4 ~ 'Commercio, riparazioni, alberghi e ristoranti,',
+                            5 ~ 'Trasporti e comunicazioni',
+                            6 ~ 'Intermediazione monetaria, finanziaria e assicurazioni',
+                            7 ~ 'Attività immobiliari, servizi alle imprese, altre att. Professionali',
+                            8 ~ 'Servizi domestici e altri servizi privati',
+                            9 ~ 'P.A., difesa, istruzione, sanità e altri servizi pubblici',
+                            10 ~ 'Organizzazioni e organismi extraterritoriali',
+                            11 ~ 'In condizione non professionale')) -> pdata
 
-val_lab(pdata$cfclass) = num_lab('
-                                 1  operaio o posizione similare
-                                 2  impiegato o insegnante
-                                 3  impiegato direttivo / quadro
-                                 4  dirigente
-                                 5  libero professionista
-                                 6  imprenditore individuale
-                                 7  lavoratore autonomo
-                                 8  titolare o coadiuvante di impresa familiare
-                                 9  socio o gestore di società
-                                10  IN CONDIZIONE NON PROFESSIONALE')
+var_lab(pdata$cfclass) = 'HH head occupational class'
 
 # Target variables ----
 
@@ -170,9 +184,9 @@ pdata <- left_join(povLine, pdata, by = join_by(anno))
 rm(povLine)
 
 ## Head count (logical poor = 1, not poor = 0)
-table(pdata$povLine, pdata$anno)
 pdata$pov <- ifelse(pdata$eqhincome <= pdata$povLine, 1, 0)
 
 
 # Save pdata
 saveRDS(pdata, file = 'SHIWpdata')
+

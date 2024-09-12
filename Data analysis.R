@@ -182,6 +182,7 @@ incGiniGG <- incMap |>
         legend.title = element_blank(),
         plot.title = element_text(size = 15,
                                   hjust = .5),
+        plot.subtitle = element_text(hjust = .5),
         plot.caption = element_text(size = 9,
                                     hjust = .5))
 
@@ -199,7 +200,7 @@ girafe(ggobj = incGiniGG,
                       padding:8px;
                       border-radius:10px;",
                       use_cursor_pos = T),
-         opts_toolbar(position = 'bottom')
+         opts_toolbar(position = 'bottomright')
        ))
 
 #### Gini index ranking bump ----
@@ -268,6 +269,7 @@ wGiniGG <- wMap |>
         legend.title = element_blank(),
         plot.title = element_text(size = 15,
                                   hjust = .5),
+        plot.subtitle = element_text(hjust = .5),
         plot.caption = element_text(size = 9,
                                     hjust = .5))
 
@@ -285,7 +287,7 @@ girafe(ggobj = wGiniGG,
                       padding:8px;
                       border-radius:10px;",
                       use_cursor_pos = T),
-         opts_toolbar(position = 'bottom')
+         opts_toolbar(position = 'bottomright')
        ))
 
 #### Gini index ranking bump ----
@@ -355,6 +357,7 @@ povhGG <- povMap |>
         legend.title = element_blank(),
         plot.title = element_text(size = 15,
                                   hjust = .5),
+        plot.subtitle = element_text(hjust = .5),
         plot.caption = element_text(size = 9,
                                     hjust = .5))
 
@@ -372,10 +375,10 @@ girafe(ggobj = povhGG,
                       padding:8px;
                       border-radius:10px;",
                       use_cursor_pos = T),
-         opts_toolbar(position = 'bottom')
+         opts_toolbar(position = 'bottomright')
        ))
 
-#### ranking  bump ----
+#### Ranking  bump ----
 pov |> 
   filter(anno == 2000 | anno == 2004 | anno == 2008 | anno == 2012 | anno == 2016 | anno == 2020) |> 
   ggplot(aes(x = anno, y = rankHCount, group = ireg, data_id = ireg)) +
@@ -435,6 +438,7 @@ povhGG <- povMap |>
         legend.title = element_blank(),
         plot.title = element_text(size = 15,
                                   hjust = .5),
+        plot.subtitle = element_text(hjust = .5),
         plot.caption = element_text(size = 9,
                                     hjust = .5))
 
@@ -452,7 +456,7 @@ girafe(ggobj = povhGG,
                       padding:8px;
                       border-radius:10px;",
                       use_cursor_pos = T),
-         opts_toolbar(position = 'bottom')
+         opts_toolbar(position = 'bottomright')
        ))
 
 #### Ranking bump ----
