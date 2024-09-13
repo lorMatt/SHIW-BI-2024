@@ -1,3 +1,6 @@
+packages <- c('ggbump','tidyverse','laeken','MetBrewer','sf','ggiraph')
+install.packages(setdiff(packages, rownames(installed.packages()))) 
+rm(packages)
 library(ggbump)
 library(tidyverse)
 library(laeken)

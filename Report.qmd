@@ -10,7 +10,10 @@ execute:
 
 ```{r}
 #| echo: false
-#| label: Setup
+#| label: Setup/data manipulation
+packages <- c('ggbump','tidyverse','laeken','MetBrewer','sf','ggiraph')
+install.packages(setdiff(packages, rownames(installed.packages()))) 
+rm(packages)
 library(ggbump)
 library(tidyverse)
 library(laeken)
@@ -104,11 +107,6 @@ giniWTot$rank <- NA
 
 giniW <- rbind(giniW, giniWTot)
 rm(giniWTot)
-
-## Export backup .csv
-write_csv(giniInc, file = 'geoData/giniInc.csv')
-write_csv(giniW, file = 'geoData/giniW.csv')
-
 
 
 # Poverty  ---------------------------------------------------------------------
@@ -231,7 +229,7 @@ Bla bla bla indici cose Gini funziona con la classe media bla bla pappappero
 ```{r}
 #| label: incGini map
 ##### import sf
-regMap <- read_sf('~/Documents/Progetti/RxR/Osservatorio/Data Analysis/SHIW-BI 2024/geoData/ISTAT - confini amministrativi/Reg01012024_g/Reg01012024_g_WGS84.shp')
+regMap <- read_sf('geoData/ISTAT - confini amministrativi/Reg01012024_g/Reg01012024_g_WGS84.shp')
 
 ##### merge Gini tibbles with sf data
 incMap <- left_join(giniInc, regMap, by = join_by(stratum == DEN_REG))
