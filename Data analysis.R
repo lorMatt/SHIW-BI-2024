@@ -4,7 +4,6 @@ library(laeken)
 library(MetBrewer)
 library(sf)
 library(ggiraph)
-library(survey)
 # import pdata
 pdata <- readRDS('SHIWpdata')
 # Inequality indexes -----------------------------------------------------------
@@ -552,24 +551,48 @@ pov |>
 
 ggsave('img/plots/povGapRank.jpeg', width = 10, height = 5)
 
-lpmresults |> 
-  rownames()
+table(pdataReg$cfedu)
 #### LPM margins plot ----
 lpmresults$vars <- factor(lpmresults$vars, levels=unique(lpmresults$vars))
-lpmresults |> 
-  ggplot(aes(x=Estimate, y=reg, colour = vars)) +
-  geom_point() +
-  geom_linerange(aes(xmin=`2.5 %`,xmax=`97.5 %`)) +
+lpmresults$roundEst <- round(lpmresults$Estimate, 2)
+
+gglpm <- lpmresults |> 
+  filter(vars == 'Titolo di studio') |> 
+  ggplot(aes(x=Estimate, y=reg, colour = vars, data_id = roundEst, tooltip = roundEst)) +
   geom_vline(xintercept = 0,
-             linewidth = 0.3,
+             linewidth = 0.4,
              color = 'gray70') +
-  scale_y_discrete(limits = unique(lpmresults$reg)) +
-  labs(x = NULL, y = NULL) +
+  geom_linerange_interactive(aes(xmin=`2.5 %`,xmax=`97.5 %`), linewidth = .6) +
+  geom_point_interactive(size = 4) +
+  geom_point(colour = 'white', size = 2) +
+  geom_point_interactive(aes(x = `2.5 %`), shape = '|', size = 4) +
+  geom_point_interactive(aes(x = `97.5 %`), shape = '|', size = 4) +
+  labs(x = NULL, y = NULL,
+       title = 'Probabilità di incidenza della povertà relativa in base al titolo di studio del capofamiglia',
+       subtitle = 'Categoria di riferimento: Specializzazione post-laurea',
+       caption = 'Dati: Banca d\'Italia. Elaborazione di Lorenzo Mattioli - Una Regione per Restare') +
+  scale_color_manual(values = met.brewer('Degas')) +
   theme_minimal(base_family = 'Helvetica') +
   theme(panel.grid = element_line(),
-        legend.title = element_blank(),
-        legend.position = 'bottom',
-        legend.text = element_text(hjust = .5),
-        axis.text = element_text())
-# plot solamente titolo di studio, il resto da tenere come controllo. GGiraph: 
-# hover tooltip con il valore di probabilità 
+        legend.position = 'none',
+        plot.title = element_text(size = 15,
+                                  hjust = 1),
+        plot.subtitle = element_text(hjust = -.065),
+        plot.caption = element_text(size = 8,
+                                    hjust = .5))
+
+girafe(ggobj = gglpm,
+       width_svg = 9,
+       options = list(
+         opts_hover(css = ''), ## CSS code of line we're hovering over
+         opts_hover_inv(css = "opacity:0.3;"), ## CSS code of all other lines
+         opts_tooltip(css = "background-color:white;
+                      color:black;
+                      font-family:Helvetica;
+                      font-style:empty;
+                      padding:8px;
+                      border-radius:10px;",
+                      use_cursor_pos = T),
+         opts_toolbar(position = 'bottomright')))
+
+       
