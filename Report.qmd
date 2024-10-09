@@ -1,15 +1,16 @@
 ---
 title: "Rapporto diseguaglianze e povertà"
 author: "Osservatorio sociale di una Regione per Restare"
-format: html
+format: 
+  html
 editor: visual
 execute: 
   warning: false
-  echo: false
 ---
 
 ```{r}
-#| echo: false
+#| code-fold: true
+#| code-summary: 'Show the code'
 #| label: Setup/data manipulation
 packages <- c('ggbump','tidyverse','laeken','MetBrewer','sf','ggiraph')
 install.packages(setdiff(packages, rownames(installed.packages()))) 
@@ -227,9 +228,11 @@ Bla bla bla indici cose Gini funziona con la classe media bla bla pappappero
 ### Mappatura
 
 ```{r}
+#| code-fold: true
+#| code-summary: 'Show the code'
 #| label: incGini map
 ##### import sf
-regMap <- read_sf('geoData/ISTAT - confini amministrativi/Reg01012024_g/Reg01012024_g_WGS84.shp')
+regMap <- readRDS('regMap.rds')
 
 ##### merge Gini tibbles with sf data
 incMap <- left_join(giniInc, regMap, by = join_by(stratum == DEN_REG))
@@ -281,6 +284,8 @@ girafe(ggobj = incGiniGG,
 ### Classifica per regione
 
 ```{r}
+#| code-fold: true
+#| code-summary: 'Show the code'
 #| label: incGini ranking bump
 ##### static
 giniInc |> 
@@ -319,7 +324,6 @@ giniInc |>
     plot.caption = element_text(size = 8,
                                 hjust = .5)
   )
-ggsave('img/plots/incGiniRank.jpeg', width = 10, height = 5)
 
 ```
 
@@ -328,6 +332,8 @@ ggsave('img/plots/incGiniRank.jpeg', width = 10, height = 5)
 ### Mappatura
 
 ```{r}
+#| code-fold: true
+#| code-summary: 'Show the code'
 #| label: wGini map
 wMap <- left_join(giniW, regMap, by = join_by(stratum == DEN_REG))
 
@@ -377,6 +383,8 @@ girafe(ggobj = wGiniGG,
 ### Classifica per regione
 
 ```{r}
+#| code-fold: true
+#| code-summary: 'Show the code'
 #| label: wGini ranking bump
 giniW |> 
   filter(year == 2000 | year == 2004 | year == 2008 | year == 2012 | year == 2016 | year == 2020) |> 
@@ -414,7 +422,6 @@ giniW |>
     plot.caption = element_text(size = 8,
                                 hjust = .5)
   )
-ggsave('img/plots/wGiniRank.jpeg', width = 10, height = 5)
 ```
 
 # Povertà
@@ -426,6 +433,8 @@ Bla bla bla indici di nuovo headcount molto crudo, povGapIndex non scomponibile
 ### Mappatura
 
 ```{r}
+#| code-fold: true
+#| code-summary: 'Show the code'
 #| label: hCount map
 pov$ireg <- gsub(' - ', '-', pov$ireg)
 povMap <- left_join(pov, regMap, by = join_by(ireg == DEN_REG))
@@ -471,14 +480,13 @@ girafe(ggobj = povhGG,
                       use_cursor_pos = T),
          opts_toolbar(position = 'bottomright')
        ))
-
-
-
 ```
 
 ### Classifica per regione
 
 ```{r}
+#| code-fold: true
+#| code-summary: 'Show the code'
 #| label: hCount ranking  bump
 pov |> 
   filter(anno == 2000 | anno == 2004 | anno == 2008 | anno == 2012 | anno == 2016 | anno == 2020) |> 
@@ -513,8 +521,6 @@ pov |>
                                   hjust = .5)
     )
 
-ggsave('img/plots/hCountRank.jpeg', width = 10, height = 5)
-
 ```
 
 ## Intensità
@@ -522,6 +528,8 @@ ggsave('img/plots/hCountRank.jpeg', width = 10, height = 5)
 ### Mappatura
 
 ```{r}
+#| code-fold: true
+#| code-summary: 'Show the code'
 #| label: povGap map
 
 ##### ggiraph ready map
@@ -571,6 +579,8 @@ girafe(ggobj = povhGG,
 ### Classifica per regione
 
 ```{r}
+#| code-fold: true
+#| code-summary: 'Show the code'
 #| label: povGap ranking bump
 
 pov |> 
@@ -605,14 +615,13 @@ pov |>
     plot.caption = element_text(size = 8,
                                 hjust = .5)
   )
-
-ggsave('img/plots/povGapRank.jpeg', width = 10, height = 5)
 ```
 
 ### LPM
 
 ```{r}
-#| echo: false
+#| code-fold: true
+#| code-summary: 'Show the code'
 #| label: LPM caterpillar plot
 lpmresults$vars <- factor(lpmresults$vars, levels=unique(lpmresults$vars))
 lpmresults$roundEst <- round(lpmresults$Estimate, 2)

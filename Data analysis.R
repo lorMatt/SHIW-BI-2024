@@ -1,4 +1,4 @@
-packages <- c('ggbump','tidyverse','laeken','MetBrewer','sf','ggiraph')
+packages <- c('ggbump','tidyverse','laeken','MetBrewer','sf','ggiraph', 'htmltools')
 install.packages(setdiff(packages, rownames(installed.packages()))) 
 rm(packages)
 library(ggbump)
@@ -7,8 +7,9 @@ library(laeken)
 library(MetBrewer)
 library(sf)
 library(ggiraph)
+library(htmltools)
 # import pdata
-pdata <- readRDS('SHIWpdata')
+pdata <- readRDS('SHIWpdata.rds')
 # Inequality indexes -----------------------------------------------------------
 ## Gini - Income ----
 ### Over regions by year
@@ -214,9 +215,7 @@ lpmresults$vars <- c('Intercetta', 'Titolo di studio', 'Titolo di studio', 'Tito
 
 ### Income ----
 #### Gini index map ----
-##### import sf
-regMap <- read_sf('~/Documents/Progetti/RxR/Osservatorio/Data Analysis/SHIW-BI 2024/geoData/ISTAT - confini amministrativi/Reg01012024_g/Reg01012024_g_WGS84.shp')
-
+regMap <- readRDS('regMap.rds')
 ##### merge Gini tibbles with sf data
 incMap <- left_join(giniInc, regMap, by = join_by(stratum == DEN_REG))
 
@@ -247,7 +246,7 @@ incGiniGG <- incMap |>
 
 
 ##### interactive map
-girafe(ggobj = incGiniGG,
+incGiniGirafe <- girafe(ggobj = incGiniGG,
        width_svg = 13,
        options = list(
          opts_hover(css = ''), ## CSS code of line we're hovering over
@@ -261,6 +260,8 @@ girafe(ggobj = incGiniGG,
                       use_cursor_pos = T),
          opts_toolbar(position = 'bottomright')
        ))
+
+htmltools::save_html(incGiniGirafe, "img/plots/incGiniGirafe.html")
 
 #### Gini index ranking bump ----
 ##### static
@@ -334,7 +335,7 @@ wGiniGG <- wMap |>
 
 
 ##### interactive map
-girafe(ggobj = wGiniGG,
+wGiniGirafe <- girafe(ggobj = wGiniGG,
        width_svg = 13,
        options = list(
          opts_hover(css = ''), ## CSS code of line we're hovering over
@@ -348,6 +349,8 @@ girafe(ggobj = wGiniGG,
                       use_cursor_pos = T),
          opts_toolbar(position = 'bottomright')
        ))
+
+htmltools::save_html(wGiniGirafe, "img/plots/wGiniGirafe.html")
 
 #### Gini index ranking bump ----
 giniW |> 
@@ -422,7 +425,7 @@ povhGG <- povMap |>
 
 
 ##### interactive map
-girafe(ggobj = povhGG,
+hCountGirafe <- girafe(ggobj = povhGG,
        width_svg = 13,
        options = list(
          opts_hover(css = ''), ## CSS code of line we're hovering over
@@ -436,6 +439,8 @@ girafe(ggobj = povhGG,
                       use_cursor_pos = T),
          opts_toolbar(position = 'bottomright')
        ))
+
+htmltools::save_html(hCountGirafe, "img/plots/hCountGirafe.html")
 
 #### Ranking  bump ----
 pov |> 
@@ -479,7 +484,7 @@ ggsave('img/plots/hCountRank.jpeg', width = 10, height = 5)
 ##### ggiraph ready map
 povMap$povGapIndex <- round(povMap$povGapIndex*100, 2)
 
-povhGG <- povMap |> 
+povintGG <- povMap |> 
   filter(anno == 2000 | anno == 2010 |anno == 2020) |>
   ggplot() +
   geom_sf_interactive(aes(geometry = geometry, fill = povGapIndex, data_id = ireg, tooltip = povGapIndex), colour = 'black') +
@@ -503,7 +508,7 @@ povhGG <- povMap |>
 
 
 ##### interactive map
-girafe(ggobj = povhGG,
+povIntGirafe <- girafe(ggobj = povintGG,
        width_svg = 13,
        options = list(
          opts_hover(css = ''), ## CSS code of line we're hovering over
@@ -517,6 +522,8 @@ girafe(ggobj = povhGG,
                       use_cursor_pos = T),
          opts_toolbar(position = 'bottomright')
        ))
+
+htmltools::save_html(povIntGirafe, "img/plots/povIntGirafe.html")
 
 #### Ranking bump ----
 pov |> 
@@ -555,6 +562,7 @@ pov |>
 ggsave('img/plots/povGapRank.jpeg', width = 10, height = 5)
 
 table(pdataReg$cfedu)
+
 #### LPM margins plot ----
 lpmresults$vars <- factor(lpmresults$vars, levels=unique(lpmresults$vars))
 lpmresults$roundEst <- round(lpmresults$Estimate, 2)
@@ -584,7 +592,7 @@ gglpm <- lpmresults |>
         plot.caption = element_text(size = 8,
                                     hjust = .5))
 
-girafe(ggobj = gglpm,
+lpmGirafe <- girafe(ggobj = gglpm,
        width_svg = 9,
        options = list(
          opts_hover(css = ''), ## CSS code of line we're hovering over
@@ -598,4 +606,5 @@ girafe(ggobj = gglpm,
                       use_cursor_pos = T),
          opts_toolbar(position = 'bottomright')))
 
+htmltools::save_html(lpmGirafe, "img/plots/lpmGirafe.html")
        

@@ -95,9 +95,9 @@ pdata |>
   group_by(nquest, anno) |> 
   mutate(cfedu = max(cfedu)) -> pdata # extending HH head's eduAtt to other HH members
 
-pdata |> 
-  select(cfedu, cfedu, cfeur, studio) |> 
-  print(n = 50) # checking for mistakes
+# pdata |> 
+#   select(cfedu, cfedu, cfeur, studio) |> 
+#   print(n = 50) # checking for mistakes
 
 pdata |> 
   mutate(cfedu = case_match(cfedu,
@@ -187,6 +187,9 @@ rm(povLine)
 pdata$pov <- ifelse(pdata$eqhincome <= pdata$povLine, 1, 0)
 
 
+# Map data import sf
+regMap <- read_sf('~/Documents/Progetti/RxR/Osservatorio/Data Analysis/SHIW-BI 2024/geoData/ISTAT - confini amministrativi/Reg01012024_g/Reg01012024_g_WGS84.shp')
+saveRDS(regMap, file = 'regMap.rds')
 # Save pdata
-saveRDS(pdata, file = 'SHIWpdata')
+saveRDS(pdata, file = 'SHIWpdata.rds')
 
