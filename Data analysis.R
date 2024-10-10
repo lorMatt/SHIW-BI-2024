@@ -11,6 +11,7 @@ library(htmltools)
 # import pdata
 pdata <- readRDS('SHIWpdata.rds')
 # Inequality indexes -----------------------------------------------------------
+
 ## Gini - Income ----
 ### Over regions by year
 as_tibble(gini(pdata$eqhincome,
@@ -244,6 +245,7 @@ incGiniGG <- incMap |>
         plot.caption = element_text(size = 9,
                                     hjust = .5))
 
+ggsave('img/plots/incGiniGG.pdf', width = 13)
 
 ##### interactive map
 incGiniGirafe <- girafe(ggobj = incGiniGG,
@@ -301,8 +303,22 @@ giniInc |>
     plot.caption = element_text(size = 8,
                                 hjust = .5)
   )
-ggsave('img/plots/incGiniRank.jpeg', width = 10, height = 5)
+ggsave('img/plots/incGiniRank.pdf', width = 10, height = 5)
 
+#### Gini index time series ----
+
+giniInc |>
+  filter(stratum == 'Umbria' | stratum == 'Italia') |> 
+  select(year, stratum, value) |> 
+  ggplot(aes(x = year, y = value, colour = stratum, fill = stratum)) +
+  geom_line() +
+  labs(title = 'Indice di Gini calcolato sul reddito disponibile delle famiglie',
+       subtitle = 'Serie storica 2000-2020') +
+  theme_minimal() +
+  theme(axis.title = element_blank(),
+        legend.title = element_blank())
+
+ggsave('img/plots/incGiniTime.pdf', width = 8, height = 4)
 
 ### Wealth ----
 #### Gini index map ----
@@ -389,7 +405,26 @@ giniW |>
     plot.caption = element_text(size = 8,
                                 hjust = .5)
   )
-ggsave('img/plots/wGiniRank.jpeg', width = 10, height = 5)
+ggsave('img/plots/wGiniRank.pdf', width = 10, height = 5)
+
+#### Gini index time series ----
+
+giniW |>
+  group_by(year) |> 
+  summarise(value = mean(value)) |>
+  mutate(stratum = 'average') |> 
+  bind_rows(giniW) |> 
+  filter(stratum == 'Umbria' | stratum == 'Italia') |> 
+  select(year, stratum, value) |> 
+  ggplot(aes(x = year, y = value, colour = stratum)) +
+  geom_line() +
+  labs(title = 'Indice di Gini calcolato sulla ricchezza delle famiglie',
+       subtitle = 'Serie storica 2000-2020') +
+  theme_minimal() +
+  theme(axis.title = element_blank(),
+        legend.title = element_blank())
+
+ggsave('img/plots/wGiniTime.pdf', width = 8, height = 4)
 
 ## Poverty ----
 
@@ -423,6 +458,7 @@ povhGG <- povMap |>
         plot.caption = element_text(size = 9,
                                     hjust = .5))
 
+ggsave('img/plots/hCountMap.pdf', width = 13, height = 7)
 
 ##### interactive map
 hCountGirafe <- girafe(ggobj = povhGG,
@@ -476,13 +512,13 @@ pov |>
                                   hjust = .5)
     )
 
-ggsave('img/plots/hCountRank.jpeg', width = 10, height = 5)
+ggsave('img/plots/hCountRank.pdf', width = 10, height = 5)
 
 ### Intensity ----
 
 #### Map ----
 ##### ggiraph ready map
-povMap$povGapIndex <- round(povMap$povGapIndex*100, 2)
+povMap$povGapIndex <- round(povMap$povGapIndex, 2)
 
 povintGG <- povMap |> 
   filter(anno == 2000 | anno == 2010 |anno == 2020) |>
@@ -493,7 +529,7 @@ povintGG <- povMap |>
        title = 'Indice d\'intensità della povertà per regione',
        caption = 'Dati: Banca d\'Italia. Elaborazione di Lorenzo Mattioli - Una Regione per Restare') +
   theme_minimal(base_family = 'Helvetica') +
-  scale_fill_viridis_c(direction = -1, limits = c(0, 21), option = 'inferno') +
+  scale_fill_viridis_c(direction = -1, option = 'inferno') +
   theme(axis.text.x=element_blank(),
         axis.ticks.x=element_blank(),
         axis.text.y=element_blank(),
@@ -506,6 +542,7 @@ povintGG <- povMap |>
         plot.caption = element_text(size = 9,
                                     hjust = .5))
 
+ggsave('img/plots/povIntMap.pdf', width = 13, height = 7)
 
 ##### interactive map
 povIntGirafe <- girafe(ggobj = povintGG,
@@ -559,16 +596,15 @@ pov |>
                                 hjust = .5)
   )
 
-ggsave('img/plots/povGapRank.jpeg', width = 10, height = 5)
+ggsave('img/plots/povGapRank.pdf', width = 10, height = 5)
 
-table(pdataReg$cfedu)
-
-#### LPM margins plot ----
+### LPM margins plot ----
 lpmresults$vars <- factor(lpmresults$vars, levels=unique(lpmresults$vars))
 lpmresults$roundEst <- round(lpmresults$Estimate, 2)
 
 gglpm <- lpmresults |> 
-  filter(vars == 'Titolo di studio') |> 
+  filter(vars == 'Titolo di studio') |>
+  mutate(reg = factor(reg, levels = c('Laurea', 'Medie superiori', 'Medie inferiori', 'Licenza elementare', 'Nessuno'))) |> 
   ggplot(aes(x=Estimate, y=reg, colour = vars, data_id = roundEst, tooltip = roundEst)) +
   geom_vline(xintercept = 0,
              linewidth = 0.4,
@@ -592,6 +628,8 @@ gglpm <- lpmresults |>
         plot.caption = element_text(size = 8,
                                     hjust = .5))
 
+ggsave('img/plots/lpmCaterpillar.pdf', width = 9, height = 4)
+
 lpmGirafe <- girafe(ggobj = gglpm,
        width_svg = 9,
        options = list(
@@ -607,4 +645,3 @@ lpmGirafe <- girafe(ggobj = gglpm,
          opts_toolbar(position = 'bottomright')))
 
 htmltools::save_html(lpmGirafe, "img/plots/lpmGirafe.html")
-       
