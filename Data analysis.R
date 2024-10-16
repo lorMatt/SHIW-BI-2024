@@ -238,14 +238,14 @@ incGiniGG <- incMap |>
         axis.text.y=element_blank(),
         axis.ticks.y=element_blank(),
         panel.grid = element_blank(),
-        legend.title = element_blank(),
+        legend.position = 'none',
         plot.title = element_text(size = 15,
                                   hjust = .5),
         plot.subtitle = element_text(hjust = .5),
         plot.caption = element_text(size = 9,
                                     hjust = .5))
 
-ggsave('img/plots/incGiniGG.pdf', width = 13)
+ggsave('img/plots/incGiniGG.pdf', width = 13, height = 7)
 
 ##### interactive map
 incGiniGirafe <- girafe(ggobj = incGiniGG,
@@ -342,13 +342,14 @@ wGiniGG <- wMap |>
         axis.text.y=element_blank(),
         axis.ticks.y=element_blank(),
         panel.grid = element_blank(),
-        legend.title = element_blank(),
+        legend.position = 'none',
         plot.title = element_text(size = 15,
                                   hjust = .5),
         plot.subtitle = element_text(hjust = .5),
         plot.caption = element_text(size = 9,
                                     hjust = .5))
 
+ggsave('img/plots/wGiniGG.pdf', width = 13, height = 7)
 
 ##### interactive map
 wGiniGirafe <- girafe(ggobj = wGiniGG,
