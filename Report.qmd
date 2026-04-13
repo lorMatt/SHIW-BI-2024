@@ -217,6 +217,10 @@ lpmresults <- lpmresults |>
 lpmresults$vars <- c('Intercetta', 'Titolo di studio', 'Titolo di studio', 'Titolo di studio', 'Titolo di studio', 'Titolo di studio', 'Sesso', 'Settore economico dell\'occupazione principale', 'Settore economico dell\'occupazione principale', 'Settore economico dell\'occupazione principale', 'Settore economico dell\'occupazione principale', 'Settore economico dell\'occupazione principale', 'Settore economico dell\'occupazione principale', 'Settore economico dell\'occupazione principale', 'Settore economico dell\'occupazione principale', 'Settore economico dell\'occupazione principale')
 ```
 
+This repo contains all the source codes and materials I used as support for a course on applied social research for [una Regione per Restare](https://www.instagram.com/regione_per_restare/). The analysis was first conducted in September 2024 and is based on the [Survey on Household Income and Wealth](https://www.bancaditalia.it/statistiche/tematiche/indagini-famiglie-imprese/bilanci-famiglie/distribuzione-microdati/index.html?com.dotmarketing.htmlpage.language=1) (Bank of Italy). The [repository](https://github.com/lorMatt/SHIW-BI-2024.git) contains the original data set, source code, cleaned datasets (in RDS format), exported visualisations and a .qmd version of the present document.
+
+You can find out more about me on my [website](https://lormatt.github.io).
+
 # Dati, misure
 
 ## Disuguaglianze
@@ -230,6 +234,20 @@ La misura di reddito scelta è il reddito disponibile familiare equivalente nett
 Ricchezza netta pro capite
 
 ### Indice di Gini
+
+![](images/clipboard-2881284955.png){width="441"}
+
+$$
+G = \frac{
+A
+}{
+A + B
+}
+$$
+
+$$
+g = \frac{\sum_i \sum_j |x_i - x_j|}{n(n-1)} \quad \text{con } i \neq j
+$$
 
 ## Povertà
 
