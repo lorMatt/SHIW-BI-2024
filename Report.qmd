@@ -5,6 +5,10 @@ format:
   html:
     toc: true
     embed-resources: true
+    navbar:
+      right:
+        - text: "Blog"
+          href: https://lormatt.github.io
 editor: visual
 execute: 
   warning: false
