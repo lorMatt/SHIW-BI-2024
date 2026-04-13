@@ -547,8 +547,6 @@ giniW |>
 
 # Povertà
 
-Bla bla bla indici di nuovo headcount molto crudo, povGapIndex non scomponibile
-
 ## Incidenza
 
 ### Mappatura
@@ -643,7 +641,7 @@ pov |>
 ```{r}
 #| code-fold: true
 #| code-summary: 'Show the code'
-#| label: hCount ranking  bump
+#| label: hCount ranking bump
 pov |> 
   filter(anno == 2000 | anno == 2004 | anno == 2008 | anno == 2012 | anno == 2016 | anno == 2020) |> 
   ggplot(aes(x = anno, y = rankHCount, group = ireg, data_id = ireg)) +

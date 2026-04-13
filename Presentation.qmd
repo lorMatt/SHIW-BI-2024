@@ -1,0 +1,905 @@
+---
+title: "Disuguaglianze e povertà"
+author: "Lorenzo Mattioli - Università di Milano, NASP"
+format:
+  revealjs:
+    incremental: true
+    scrollable: false
+editor: visual
+---
+
+```{r}
+#| code-fold: true
+#| code-summary: 'Show the code'
+#| label: Setup/data manipulation
+packages <- c('ggbump','tidyverse','laeken','MetBrewer','sf','ggiraph')
+install.packages(setdiff(packages, rownames(installed.packages()))) 
+rm(packages)
+library(ggbump)
+library(tidyverse)
+library(laeken)
+library(MetBrewer)
+library(sf)
+library(ggiraph)
+# import pdata
+pdata <- readRDS('SHIWpdata')
+# Inequality indexes -----------------------------------------------------------
+## Gini - Income ----
+### Over regions by year
+as_tibble(gini(pdata$eqhincome,
+     weights = pdata$peso,
+     years = pdata$anno,
+     breakdown = pdata$ireg,
+     na.rm = T
+)[['valueByStratum']]) -> giniInc
+
+giniInc$stratum <- gsub(' - ', '-', giniInc$stratum)
+### ranking
+giniInc |> 
+  group_by(year) |> 
+  mutate(
+    rank = rank(value)
+  ) -> giniInc
+### rounding off value
+giniInc$value <- round(giniInc$value, 2)
+
+### ranking5
+giniInc$rank5 <- case_match(giniInc$rank,
+                            1:4 ~ 1,
+                            5:8 ~ 2,
+                            9:12 ~ 3,
+                            13:16 ~ 4,
+                            17:20 ~ 5
+                            )
+### Total by year
+as_tibble_col(gini(pdata$eqhincome,
+     weights = pdata$peso,
+     years = pdata$anno,
+     na.rm = T
+)[["value"]]) -> giniIncTot
+
+giniIncTot$stratum <- 'Italia'
+giniIncTot$year <- c(2000, 2002, 2004, 2008, 2010, 2012, 2014, 2016, 2020)
+giniIncTot$rank <- NA
+
+giniInc <- rbind(giniInc, giniIncTot)
+rm(giniIncTot)
+
+
+## Gini - wealth ----
+### Over regions by year
+as_tibble(gini(pdata$pcwealth,
+               weights = pdata$peso,
+               years = pdata$anno,
+               breakdown = pdata$ireg,
+               na.rm = T
+)[['valueByStratum']]) -> giniW
+
+giniW$stratum <- gsub(' - ', '-', giniW$stratum)
+
+### ranking
+giniW |> 
+  group_by(year) |> 
+  mutate(
+    rank = rank(value)
+  ) -> giniW
+### ranking5
+giniW$rank5 <- case_match(giniW$rank,
+                            1:4 ~ 1,
+                            5:8 ~ 2,
+                            9:12 ~ 3,
+                            13:16 ~ 4,
+                            17:20 ~ 5
+)
+
+### rounding off value
+giniW$value <- round(giniW$value, 2)
+
+### Total by year
+as_tibble_col(gini(pdata$pcwealth,
+                   weights = pdata$peso,
+                   years = pdata$anno,
+                   na.rm = T
+)[["value"]]) -> giniWTot
+
+giniWTot$stratum <- 'Italia'
+giniWTot$year <- c(2000, 2002, 2004, 2008, 2010, 2012, 2014, 2016, 2020)
+giniWTot$rank <- NA
+
+giniW <- rbind(giniW, giniWTot)
+rm(giniWTot)
+
+
+# Poverty  ---------------------------------------------------------------------
+
+## Head count ----
+### Over region by year
+pdata |> 
+  group_by(anno, ireg) |> 
+  count(pov) -> pov
+pdata |> 
+  group_by(anno, ireg) |> 
+  count(!pov) -> pov$'!pov'
+pov |> 
+  mutate('!pov' = `!pov`$n) |> 
+  filter(pov == 1) |> 
+  mutate(pov = n) |> 
+  select(!n) -> pov
+
+pov |> 
+  mutate(hCount = pov/(sum(pov, `!pov`))) -> pov
+
+### Ranking
+pov |> 
+  group_by(anno) |> 
+  mutate(
+    rankHCount = 21-rank(hCount)
+  ) -> pov
+
+## Poverty intensity ----
+### povLine
+pdata |> 
+  group_by(anno) |> 
+  summarise(povLine = weightedMedian(eqhincome,
+                                     weights = peso)*0.6) -> povLine
+pov <- left_join(pov, povLine)
+rm(povLine)
+
+### Poverty gap
+avPoor <- pdata |>
+  filter(pov == 1) |> 
+  group_by(anno, ireg) |>
+  summarise(avPoor = weightedMean(eqhincome, weights = peso))
+pov <- left_join(pov, avPoor)
+rm(avPoor)
+pov$povGapIndex <- pov$hCount * (pov$povLine - pov$avPoor)/pov$povLine
+
+### Ranking
+pov |> 
+  group_by(anno) |> 
+  mutate(
+    rankPovGap = 21-rank(povGapIndex)
+  ) -> pov
+
+## LPM risk of being in poverty ----
+pdata <- within(pdata, cfedu <- relevel(factor(cfedu), ref = 'Specializzazione post-laurea'))
+pdata <- within(pdata, cfsex <- relevel(factor(cfsex), ref = 'Maschile'))
+pdataReg <- pdata |> 
+  filter(anno == 2020)
+
+### Regression models
+lpm0 <- lm(pov ~ factor(cfedu),
+   weights = pesopop,
+   data = pdataReg)
+lpm1 <- lm(pov ~ factor(cfedu) + factor(cfsex) + factor(cfclass),
+           weights = pesopop,
+           data = pdataReg)
+
+### Harvesting results
+lpm0results <- as_tibble(summary(lpm0)[["coefficients"]])
+lpm0results <- cbind(lpm0results, confint(lpm0, level=0.95)) #adding CIs
+
+lpm1results <- as_tibble(summary(lpm1)[["coefficients"]])
+lpm1results <- cbind(lpm1results, confint(lpm1, level=0.95)) #adding CIs
+lpm0results <- lpm0results %>% setNames(paste0('0.', names(.)))
+
+### Cleaning results
+lpm0results <- lpm0results |> 
+  rownames_to_column(var = 'reg')
+lpm1results <- lpm1results |> 
+  rownames_to_column(var = 'reg')
+
+lpmresults <- full_join(lpm0results, lpm1results)
+rm(lpm0results, lpm1results, lpm0, lpm1)
+
+lpmresults['reg'][lpmresults['reg'] == '(Intercept)'] <- ')Intercept'
+
+lpmresults <- lpmresults |> 
+  mutate(reg = str_split_fixed(reg, fixed(')'), n = Inf)) 
+
+lpmresults <- within(lpmresults, reg <- reg[,2])
+
+lpmresults$'0.star' <- ifelse(lpmresults$`0.Pr(>|t|)` <= 0.001, '***',
+                            ifelse(lpmresults$`0.Pr(>|t|)` <= 0.01, '**',
+                                   ifelse(lpmresults$`0.Pr(>|t|)` <= 0.05, '*',
+                                          ifelse(lpmresults$`0.Pr(>|t|)` <= 0.1, '.', ''))))
+
+lpmresults$star<- ifelse(lpmresults$`Pr(>|t|)` <= 0.001, '***',
+                              ifelse(lpmresults$`Pr(>|t|)` <= 0.01, '**',
+                                     ifelse(lpmresults$`Pr(>|t|)` <= 0.05, '*',
+                                            ifelse(lpmresults$`Pr(>|t|)` <= 0.1, '.', ''))))
+
+lpmresults <- lpmresults |> 
+  relocate('0.star', .before = Estimate)
+
+lpmresults$vars <- c('Intercetta', 'Titolo di studio', 'Titolo di studio', 'Titolo di studio', 'Titolo di studio', 'Titolo di studio', 'Sesso', 'Settore economico dell\'occupazione principale', 'Settore economico dell\'occupazione principale', 'Settore economico dell\'occupazione principale', 'Settore economico dell\'occupazione principale', 'Settore economico dell\'occupazione principale', 'Settore economico dell\'occupazione principale', 'Settore economico dell\'occupazione principale', 'Settore economico dell\'occupazione principale', 'Settore economico dell\'occupazione principale')
+```
+
+## Disuguaglianza di cosa?
+
+-   **reddito** (lordo/netto; giornaliero/settimanale/annuale/nella vita; da quali fonti?)
+-   **ricchezza** \[tutto ciò che un individuo possiede… ovvero? E i debiti/mutui?\]
+-   **consumo/spesa**
+
+## Unità di analisi
+
+**Individuo**, **coppia**, **conviventi**, **famiglia** (nucleare o allargata)?
+
+Ciascuna scelta implica assunzioni su condivisione e redistribuzione delle risorse. Se la famiglia è l'unità di aggregazione, occorre scegliere se pesare per individui o per famiglie.
+
+-   **Scale di equivalenza** Aggiustano il reddito familiare per il numero di componenti. Principali: scala OCSE modificata (1 / 0,5 / 0,3) e radice quadrata dei componenti. Per la ricchezza si usa spesso il pro capite.
+
+## **Proprietà desiderabili delle misure di disuguaglianza - 1**
+
+-   **Simmetria**
+
+-   **Indipendenza dalla scala** e dalla dimensione della popolazione
+
+-   **Decomponibilità per sottogruppi**
+
+## **Proprietà desiderabili delle misure di disuguaglianza - 2**
+
+-   **Principio dei trasferimenti**
+
+    -   **Debole** (Pigou-Dalton) - un trasferimento progressivo riduce la disuguaglianza
+
+    -   **Forte** (Cowell) - la diminuzione delle disuguaglianze dovuta al trasferimento dipende dalla distanza nei redditi dei due individui che prendono parte alla transazione
+
+-   **Sensibilità** ai trasferimenti nella **parte bassa della distribuzione** (Atkinson)
+
+## **Principali misure di disuguaglianza - 1**
+
+-   **Rapporti tra percentili/quote**: es. Q90/Q50, S80/S20 — semplici ma limitati
+
+-   **Coefficiente di variazione**: $$\frac{\sqrt{σ^2}}
+    {ȳ}$$ — decomponibile, distanze assolute
+
+## Principali misure **di disuguaglianza** - 2
+
+-   **Indice di Gini**: 0–1, basato sulla curva di Lorenz, non decomponibile, sensibile alla parte centrale della distribuzione
+
+-   **Entropia generalizzata (Eθ)**: famiglia parametrica, decomponibile; casi speciali: MLD (θ=0), indice di Theil (θ=1), metà CV² (θ=2). Al diminuire di θ, maggiore sensibilità alla parte bassa $$ E_\theta = \frac{1}{\theta^2 - \theta} \left[ \frac{1}{n} \sum_{i=1}^{n} \left( \frac{y_i}{\bar{y}} \right)^\theta - 1 \right]$$
+
+## Curva di Lorenz e indice di Gini
+
+::::: columns
+::: {.column width="50%"}
+![](images/clipboard-2881284955.png){width="609"}
+:::
+
+::: {.column width="50%"}
+$$
+G = \frac{
+A
+}{
+A + B
+}
+$$ $$
+g = \frac{\sum_i \sum_j |x_i - x_j|}{n(n-1)} \quad \text{con } i \neq j
+$$
+:::
+:::::
+
+## Misurare la povertà
+
+-   Approcci **soggettivi**/**oggettivi**
+
+-   Assoluta (paniere fisso aggiornato per inflazione) vs. relativa (es. 60% del reddito mediano). Indicatori: tasso di incidenza, rischio relativo, gap di povertà.
+
+## Esempi di misure
+
+**Tasso di povertà**
+
+$$
+\frac{
+\text{Numero di persone in condizioni di povertà}
+}{
+\text{Popolazione totale}
+}
+$$
+
+**Gap di povertà**
+
+$$
+\frac{
+(\text{soglia di povertà} - \text{reddito povero medio})}
+{
+\text{soglia di povertà}}
+$$
+
+**Intensità della povertà** (gap \* tasso)
+
+$$
+\text{Tasso di povertà} \times
+\frac{
+(\text{soglia di povertà} - \text{reddito povero medio})}
+{
+\text{soglia di povertà}}
+$$
+
+# Dati
+
+[Inchiesta sui redditi e la ricchezza delle famiglie - Banca d'Italia](https://www.bancaditalia.it/statistiche/tematiche/indagini-famiglie-imprese/bilanci-famiglie/index.html?com.dotmarketing.htmlpage.language=102)
+
+-   Cross-section ripetuta
+
+-   Campione probabilistico rappresentativo della popolazione italiana
+
+# Diseguaglianze di reddito
+
+La misura di reddito scelta è il reddito familiare equivalente netto, aggiustato per l'inflazione con deflattore della banca d'Italia.
+
+## Mappatura
+
+```{r}
+#| code-fold: true
+#| code-summary: 'Show the code'
+#| label: incGini map
+##### import sf
+regMap <- readRDS('regMap.rds')
+
+##### merge Gini tibbles with sf data
+incMap <- left_join(giniInc, regMap, by = join_by(stratum == DEN_REG))
+
+##### ggiraph ready map
+incGiniGG <- incMap |> 
+  filter(year == 2000 | year == 2010 |year == 2020) |> 
+  drop_na(rank) |> 
+  ggplot() +
+  geom_sf_interactive(aes(geometry = geometry, fill = value, data_id = stratum, tooltip = value), colour = 'black') +
+  facet_wrap(vars(year)) +
+  labs(x = NULL, y = NULL,
+       title = 'Indice di Gini per regione',
+       subtitle = 'Reddito familiare equivalente',
+       caption = 'Dati: Banca d\'Italia. Elaborazione di Lorenzo Mattioli - Una Regione per Restare') +
+  theme_minimal(base_family = 'Helvetica') +
+  scale_fill_viridis_c(direction = -1, limits = c(15, 40), option = 'mako') +
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank(),
+        panel.grid = element_blank(),
+        legend.title = element_blank(),
+        plot.title = element_text(size = 15,
+                                  hjust = .5),
+        plot.subtitle = element_text(hjust = .5),
+        plot.caption = element_text(size = 9,
+                                    hjust = .5))
+
+
+##### interactive map
+girafe(ggobj = incGiniGG,
+       width_svg = 13,
+       options = list(
+         opts_hover(css = ''), ## CSS code of line we're hovering over
+         opts_hover_inv(css = "opacity:0.3;"), ## CSS code of all other lines
+         opts_tooltip(css = "background-color:white;
+                      color:black;
+                      font-family:Helvetica;
+                      font-style:empty;
+                      padding:8px;
+                      border-radius:10px;",
+                      use_cursor_pos = T),
+         opts_toolbar(position = 'bottomright')
+       ))
+
+```
+
+## Serie storica
+
+```{r}
+#| code-fold: true
+#| code-summary: 'Show the code'
+#| label: incGini ts
+
+giniInc |>
+  select(year, stratum, value) |> 
+  group_by(stratum) |> 
+  group_modify(~ add_row(.x, year = 2018)) |> 
+  ungroup() |> 
+  ggplot(aes(x = year, y = value)) +
+  geom_line(data = ~. |> filter(stratum == 'Italia')) +
+  geom_line(data = ~. |> filter(stratum == 'Umbria'), linetype = 'dashed') +
+  geom_line(data = ~. |> filter(stratum != 'Umbria' & stratum != 'Italia'),
+            aes(group = stratum), alpha = .1) +
+  geom_point(data = ~. |> filter(stratum == 'Italia')) +
+  geom_point(data = ~. |> filter(stratum == 'Umbria')) +
+  geom_point(data = ~. |> filter(stratum == 'Umbria'), colour = 'white', size = .5) +
+  geom_point(data = ~. |> filter(stratum != 'Umbria' & stratum != 'Italia'),
+             alpha = .1) +
+  labs(title = 'Indice di Gini calcolato sul reddito disponibile delle famiglie',
+       subtitle = 'Serie storica 2000-2020',
+       caption = 'Linea continua per la media italiana. Linea spezzata per i valori umbri. Le linee in grigio sono i valori delle altre regioni.') +
+  scale_x_continuous(breaks = seq(2000, 2020, by = 2)) +
+  theme_minimal() +
+  theme(axis.title = element_blank(),
+        axis.line = element_line(),
+        legend.title = element_blank())
+```
+
+## Classifica per regione
+
+```{r}
+#| code-fold: true
+#| code-summary: 'Show the code'
+#| label: incGini ranking bump
+##### static
+giniInc |> 
+  filter(year == 2000 | year == 2004 | year == 2008 | year == 2012 | year == 2016 | year == 2020) |> 
+  drop_na(rank) |> 
+  ggplot(aes(x = year, y = rank, data_id = stratum)) +
+  geom_bump(linewidth = 0.6, color = 'gray90',
+            data = ~. |> filter(stratum != 'Umbria')) +
+  geom_bump(aes(colour = stratum), linewidth = 0.8,
+            data = ~. |> filter(stratum == 'Umbria')) +
+  geom_point(color = 'gray90',
+             data = ~. |> filter(stratum != 'Umbria'),
+             size = 4) +
+  geom_point(aes(colour = stratum),
+             data = ~. |> filter(stratum == 'Umbria'),
+             size = 4) +
+  geom_point(color = 'white', size = 2) +
+  geom_text_interactive(aes(label = stratum, group = stratum), colour = 'gray90', x = 2021, hjust = 0, size = 3.5, family = 'Helvetica',
+                        data = ~. |> filter(year == 2020)) +
+  geom_text(aes(label = stratum, group = stratum), colour = 'black', x = 2021, hjust = 0,, size = 3.5, family = 'Helvetica',
+            data = ~. |> filter(year == 2020 & stratum == 'Umbria')) +
+  scale_color_viridis_d(option = 'mako') +
+  scale_x_continuous(limits = c(2000, 2024) ,expand = c(0.01, 0), breaks=c(2000, 2004, 2008, 2012, 2016, 2020)) +
+  scale_y_reverse(expand = c(0.02, 0), breaks = c(5, 10, 15, 20)) +
+  labs(x = NULL, y = NULL,
+       title = 'Classifica delle regioni italiane per indice di Gini',
+       subtitle = 'Reddito equivalente familiare',
+       caption = 'Dati: Banca d\'Italia. Elaborazione di Lorenzo Mattioli - Una Regione per Restare') +
+  theme_minimal(base_family = 'Helvetica') +
+  theme(
+    legend.position = 'none',
+    panel.grid = element_blank(),
+    plot.title = element_text(size = 15,
+                              hjust = .5),
+    plot.subtitle = element_text(hjust = .5),
+    plot.caption = element_text(size = 8,
+                                hjust = .5)
+  )
+
+```
+
+# Diseguaglianze di ricchezza
+
+## Mappatura
+
+```{r}
+#| code-fold: true
+#| code-summary: 'Show the code'
+#| label: wGini map
+wMap <- left_join(giniW, regMap, by = join_by(stratum == DEN_REG))
+
+##### ggiraph ready map
+wGiniGG <- wMap |> 
+  filter(year == 2000 | year == 2010 |year == 2020) |> 
+  drop_na(rank) |> 
+  ggplot() +
+  geom_sf_interactive(aes(geometry = geometry, fill = value, data_id = stratum, tooltip = value), colour = 'black') +
+  facet_wrap(vars(year)) +
+  labs(x = NULL, y = NULL,
+       title = 'Indice di Gini per regione',
+       subtitle = 'Ricchezza',
+       caption = 'Dati: Banca d\'Italia. Elaborazione di Lorenzo Mattioli - Una Regione per Restare') +
+  theme_minimal(base_family = 'Helvetica') +
+  scale_fill_viridis_c(direction = -1, limits = c(38, 73), option = 'mako') +
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank(),
+        panel.grid = element_blank(),
+        legend.title = element_blank(),
+        plot.title = element_text(size = 15,
+                                  hjust = .5),
+        plot.subtitle = element_text(hjust = .5),
+        plot.caption = element_text(size = 9,
+                                    hjust = .5))
+
+
+##### interactive map
+girafe(ggobj = wGiniGG,
+       width_svg = 13,
+       options = list(
+         opts_hover(css = ''), ## CSS code of line we're hovering over
+         opts_hover_inv(css = "opacity:0.3;"), ## CSS code of all other lines
+         opts_tooltip(css = "background-color:white;
+                      color:black;
+                      font-family:Helvetica;
+                      font-style:empty;
+                      padding:8px;
+                      border-radius:10px;",
+                      use_cursor_pos = T),
+         opts_toolbar(position = 'bottomright')
+       ))
+```
+
+## Serie storica
+
+```{r}
+#| code-fold: true
+#| code-summary: 'Show the code'
+#| label: wGini ts
+
+giniW |>
+  select(year, stratum, value) |> 
+  group_by(stratum) |> 
+  group_modify(~ add_row(.x, year = 2018)) |> 
+  ungroup() |> 
+  ggplot(aes(x = year, y = value)) +
+  geom_line(data = ~. |> filter(stratum == 'Italia')) +
+  geom_line(data = ~. |> filter(stratum == 'Umbria'), linetype = 'dashed') +
+  geom_line(data = ~. |> filter(stratum != 'Umbria' & stratum != 'Italia'),
+            aes(group = stratum), alpha = .1) +
+  geom_point(data = ~. |> filter(stratum == 'Italia')) +
+  geom_point(data = ~. |> filter(stratum == 'Umbria')) +
+  geom_point(data = ~. |> filter(stratum == 'Umbria'), colour = 'white', size = .5) +
+  geom_point(data = ~. |> filter(stratum != 'Umbria' & stratum != 'Italia'),
+             alpha = .1) +
+  labs(title = 'Indice di Gini calcolato sulla ricchezza pro capite',
+       subtitle = 'Serie storica 2000-2020',
+       caption = 'Linea continua per la media italiana. Linea spezzata per i valori umbri. Le linee in grigio sono i valori delle altre regioni.') +
+  scale_x_continuous(breaks = seq(2000, 2020, by = 2)) +
+  theme_minimal() +
+  theme(axis.title = element_blank(),
+        axis.line = element_line(),
+        legend.title = element_blank())
+```
+
+## Classifica per regione
+
+```{r}
+#| code-fold: true
+#| code-summary: 'Show the code'
+#| label: wGini ranking bump
+giniW |> 
+  filter(year == 2000 | year == 2004 | year == 2008 | year == 2012 | year == 2016 | year == 2020) |> 
+  drop_na(rank) |> 
+  ggplot(aes(x = year, y = rank, data_id = stratum)) +
+  geom_bump(linewidth = 0.6, color = 'gray90',
+            data = ~. |> filter(stratum != 'Umbria')) +
+  geom_bump(aes(colour = stratum), linewidth = 0.8,
+            data = ~. |> filter(stratum == 'Umbria')) +
+  geom_point(color = 'gray90',
+             data = ~. |> filter(stratum != 'Umbria'),
+             size = 4) +
+  geom_point(aes(colour = stratum),
+             data = ~. |> filter(stratum == 'Umbria'),
+             size = 4) +
+  geom_point(color = 'white', size = 2) +
+  geom_text_interactive(aes(label = stratum, group = stratum), colour = 'gray90', x = 2021, hjust = 0, size = 3.5, family = 'Helvetica',
+            data = ~. |> filter(year == 2020)) +
+  geom_text(aes(label = stratum, group = stratum), colour = 'black', x = 2021, hjust = 0,, size = 3.5, family = 'Helvetica',
+            data = ~. |> filter(year == 2020 & stratum == 'Umbria')) +
+  scale_color_viridis_d(option = 'mako') +
+  scale_x_continuous(limits = c(2000, 2024) ,expand = c(0.01, 0), breaks=c(2000, 2004, 2008, 2012, 2016, 2020)) +
+  scale_y_reverse(expand = c(0.02, 0), breaks = c(5, 10, 15, 20)) +
+  labs(x = NULL, y = NULL,
+       title = 'Classifica delle regioni italiane per indice di Gini',
+       subtitle = 'Ricchezza',
+       caption = 'Dati: Banca d\'Italia. Elaborazione di Lorenzo Mattioli - Una Regione per Restare') +
+  theme_minimal(base_family = 'Helvetica') +
+  theme(
+    legend.position = 'none',
+    panel.grid = element_blank(),
+    plot.title = element_text(size = 15,
+                              hjust = .5),
+    plot.subtitle = element_text(hjust = .5),
+    plot.caption = element_text(size = 8,
+                                hjust = .5)
+  )
+```
+
+# Tasso di incidenza della povertà
+
+## Mappatura
+
+```{r}
+#| code-fold: true
+#| code-summary: 'Show the code'
+#| label: hCount map
+pov$ireg <- gsub(' - ', '-', pov$ireg)
+povMap <- left_join(pov, regMap, by = join_by(ireg == DEN_REG))
+
+##### ggiraph ready map
+povMap$hCount <- round(povMap$hCount*100, 2)
+
+povhGG <- povMap |> 
+  filter(anno == 2000 | anno == 2010 |anno == 2020) |>
+  ggplot() +
+  geom_sf_interactive(aes(geometry = geometry, fill = hCount, data_id = ireg, tooltip = hCount), colour = 'black') +
+  facet_wrap(vars(anno)) +
+  labs(x = NULL, y = NULL,
+       title = 'Indice di povertà per regione',
+       caption = 'Dati: Banca d\'Italia. Elaborazione di Lorenzo Mattioli - Una Regione per Restare') +
+  theme_minimal(base_family = 'Helvetica') +
+  scale_fill_viridis_c(direction = -1, limits = c(0, 51), option = 'inferno') +
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank(),
+        panel.grid = element_blank(),
+        legend.title = element_blank(),
+        plot.title = element_text(size = 15,
+                                  hjust = .5),
+        plot.subtitle = element_text(hjust = .5),
+        plot.caption = element_text(size = 9,
+                                    hjust = .5))
+
+
+##### interactive map
+girafe(ggobj = povhGG,
+       width_svg = 13,
+       options = list(
+         opts_hover(css = ''), ## CSS code of line we're hovering over
+         opts_hover_inv(css = "opacity:0.3;"), ## CSS code of all other lines
+         opts_tooltip(css = "background-color:white;
+                      color:black;
+                      font-family:Helvetica;
+                      font-style:empty;
+                      padding:8px;
+                      border-radius:10px;",
+                      use_cursor_pos = T),
+         opts_toolbar(position = 'bottomright')
+       ))
+```
+
+## Serie storica
+
+```{r}
+#| code-fold: true
+#| code-summary: 'Show the code'
+#| label: povHCount ts
+
+pov |>
+  summarise(hCount = mean(hCount)) |>
+  mutate(ireg = 'average') |> 
+  bind_rows(pov) |> 
+  select(anno, ireg, hCount) |> 
+  group_by(ireg) |> 
+  group_modify(~ add_row(.x, anno = 2018)) |> 
+  ungroup() |> 
+  ggplot(aes(x = anno, y = hCount)) +
+  geom_line(data = ~. |> filter(ireg == 'average')) +
+  geom_line(data = ~. |> filter(ireg == 'Umbria'), linetype = 'dashed') +
+  geom_line(data = ~. |> filter(ireg != 'Umbria' & ireg != 'average'),
+            aes(group = ireg), alpha = .1) +
+  geom_point(data = ~. |> filter(ireg == 'average')) +
+  geom_point(data = ~. |> filter(ireg == 'Umbria')) +
+  geom_point(data = ~. |> filter(ireg == 'Umbria'), colour = 'white', size = .5) +
+  geom_point(data = ~. |> filter(ireg != 'Umbria' & ireg != 'average'),
+             alpha = .1) +
+  labs(title = 'Incidenza della povertà',
+       subtitle = 'Serie storica 2000-2020',
+       caption = 'Linea continua per la media italiana. Linea spezzata per i valori umbri. Le linee in grigio sono i valori delle altre regioni.') +
+  scale_x_continuous(breaks = seq(2000, 2020, by = 2)) +
+  theme_minimal() +
+  theme(axis.title = element_blank(),
+        axis.line = element_line(),
+        legend.title = element_blank())
+```
+
+## Classifica per regione
+
+```{r}
+#| code-fold: true
+#| code-summary: 'Show the code'
+#| label: hCount ranking bump
+
+pov |> 
+  filter(anno == 2000 | anno == 2004 | anno == 2008 | anno == 2012 | anno == 2016 | anno == 2020) |> 
+  ggplot(aes(x = anno, y = rankHCount, group = ireg, data_id = ireg)) +
+    geom_bump(linewidth = 0.6, color = "gray90", smooth = 6) +
+    geom_bump(aes(colour = ireg), linewidth = 0.8, smooth = 6,
+                data = ~. |> filter(ireg == 'Umbria')) +
+    geom_point(color = "gray90", size = 4) +
+    geom_point(aes(colour = ireg),
+               data = ~. |> filter(ireg == 'Umbria'),
+               size = 4) +
+    geom_point(color = 'white', size = 2) +
+    geom_text(aes(label = ireg, group = ireg), colour = 'gray90', x = 2021, hjust = 0, size = 3.5, family = 'Helvetica',
+              data = ~. |> filter(anno == 2020)) +
+    geom_text(aes(label = ireg, group = ireg), colour = 'black', x = 2021, hjust = 0,, size = 3.5, family = 'Helvetica',
+              data = ~. |> filter(anno == 2020 & ireg == 'Umbria')) +
+    scale_color_manual(values = met.brewer('Degas')) +
+    scale_x_continuous(limits = c(2000, 2030) ,expand = c(0.01, 0), breaks=c(2000, 2010, 2020)) +
+    scale_y_reverse(expand = c(0.02, 0), breaks = c(1, 5, 10, 15, 20)) +
+    labs(x = NULL, y = NULL,
+         title = 'Classifica delle regioni italiane per tasso di povertà',
+         subtitle = 'Dalla più povera alla meno povera',
+         caption = 'Dati: Banca d\'Italia. Elaborazione di Lorenzo Mattioli - Una Regione per Restare') +
+    theme_minimal(base_family = 'Helvetica') +
+    theme(
+      legend.position = 'none',
+      panel.grid = element_blank(),
+      plot.title = element_text(size = 15,
+                           hjust = .5),
+      plot.subtitle = element_text(hjust = .5),
+      plot.caption = element_text(size = 8,
+                                  hjust = .5)
+    )
+
+```
+
+# Intensità della povertà
+
+## Mappatura
+
+```{r}
+#| code-fold: true
+#| code-summary: 'Show the code'
+#| label: povGap map
+
+##### ggiraph ready map
+povMap$povGapIndex <- round(povMap$povGapIndex*100, 2)
+
+povhGG <- povMap |> 
+  filter(anno == 2000 | anno == 2010 |anno == 2020) |>
+  ggplot() +
+  geom_sf_interactive(aes(geometry = geometry, fill = povGapIndex, data_id = ireg, tooltip = povGapIndex), colour = 'black') +
+  facet_wrap(vars(anno)) +
+  labs(x = NULL, y = NULL,
+       title = 'Indice d\'intensità della povertà per regione',
+       caption = 'Dati: Banca d\'Italia. Elaborazione di Lorenzo Mattioli - Una Regione per Restare') +
+  theme_minimal(base_family = 'Helvetica') +
+  scale_fill_viridis_c(direction = -1, limits = c(0, 21), option = 'inferno') +
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank(),
+        panel.grid = element_blank(),
+        legend.title = element_blank(),
+        plot.title = element_text(size = 15,
+                                  hjust = .5),
+        plot.subtitle = element_text(hjust = .5),
+        plot.caption = element_text(size = 9,
+                                    hjust = .5))
+
+
+##### interactive map
+girafe(ggobj = povhGG,
+       width_svg = 13,
+       options = list(
+         opts_hover(css = ''), ## CSS code of line we're hovering over
+         opts_hover_inv(css = "opacity:0.3;"), ## CSS code of all other lines
+         opts_tooltip(css = "background-color:white;
+                      color:black;
+                      font-family:Helvetica;
+                      font-style:empty;
+                      padding:8px;
+                      border-radius:10px;",
+                      use_cursor_pos = T),
+         opts_toolbar(position = 'bottomright')
+       ))
+
+```
+
+## Serie storica
+
+```{r}
+#| code-fold: true
+#| code-summary: 'Show the code'
+#| label: povInt ts
+
+pov |>
+  summarise(povGapIndex = mean(povGapIndex)) |>
+  mutate(ireg = 'average') |> 
+  bind_rows(pov) |> 
+  select(anno, ireg, povGapIndex) |> 
+  group_by(ireg) |> 
+  group_modify(~ add_row(.x, anno = 2018)) |> 
+  ungroup() |> 
+  ggplot(aes(x = anno, y = povGapIndex)) +
+  geom_line(data = ~. |> filter(ireg == 'average')) +
+  geom_line(data = ~. |> filter(ireg == 'Umbria'), linetype = 'dashed') +
+  geom_line(data = ~. |> filter(ireg != 'Umbria' & ireg != 'average'),
+            aes(group = ireg), alpha = .1) +
+  geom_point(data = ~. |> filter(ireg == 'average')) +
+  geom_point(data = ~. |> filter(ireg == 'Umbria')) +
+  geom_point(data = ~. |> filter(ireg == 'Umbria'), colour = 'white', size = .5) +
+  geom_point(data = ~. |> filter(ireg != 'Umbria' & ireg != 'average'),
+             alpha = .1) +
+  labs(title = 'Intensità della povertà',
+       subtitle = 'Serie storica 2000-2020',
+       caption = 'Linea continua per la media italiana. Linea spezzata per i valori umbri. Le linee in grigio sono i valori delle altre regioni.') +
+  scale_x_continuous(breaks = seq(2000, 2020, by = 2)) +
+  theme_minimal() +
+  theme(axis.title = element_blank(),
+        axis.line = element_line(),
+        legend.title = element_blank())
+```
+
+## Classifica per regione
+
+```{r}
+#| code-fold: true
+#| code-summary: 'Show the code'
+#| label: povGap ranking bump
+
+pov |> 
+  filter(anno == 2000 | anno == 2004 | anno == 2008 | anno == 2012 | anno == 2016 | anno == 2020) |> 
+  ggplot(aes(x = anno, y = rankPovGap, group = ireg)) +
+  geom_bump(linewidth = 0.6, color = "gray90", smooth = 6) +
+  geom_bump(aes(colour = ireg), linewidth = 0.8, smooth = 6,
+            data = ~. |> filter(ireg == 'Umbria')) +
+  geom_point(color = "gray90", size = 4) +
+  geom_point(aes(colour = ireg),
+             data = ~. |> filter(ireg == 'Umbria'),
+             size = 4) +
+  geom_point(color = 'white', size = 2) +
+  geom_text(aes(label = ireg, group = ireg), colour = 'gray90', x = 2021, hjust = 0, size = 3.5, family = 'Helvetica',
+            data = ~. |> filter(anno == 2020)) +
+  geom_text(aes(label = ireg, group = ireg), colour = 'black', x = 2021, hjust = 0,, size = 3.5, family = 'Helvetica',
+            data = ~. |> filter(anno == 2020 & ireg == 'Umbria')) +
+  scale_color_manual(values = met.brewer('Degas')) +
+  scale_x_continuous(limits = c(2000, 2030) ,expand = c(0.01, 0), breaks=c(2000, 2010, 2020)) +
+  scale_y_reverse(expand = c(0.02, 0), breaks = c(1, 5, 10, 15, 20)) +
+  labs(x = NULL, y = NULL,
+       title = 'Classifica delle regioni italiane per poverty intensity',
+       subtitle = 'Dalla più povera alla meno povera',
+       caption = 'Dati: Banca d\'Italia. Elaborazione di Lorenzo Mattioli - Una Regione per Restare') +
+  theme_minimal(base_family = 'Helvetica') +
+  theme(
+    legend.position = 'none',
+    panel.grid = element_blank(),
+    plot.title = element_text(size = 15,
+                              hjust = .5),
+    plot.subtitle = element_text(hjust = .5),
+    plot.caption = element_text(size = 8,
+                                hjust = .5)
+  )
+```
+
+# Investigare i fattori di rischio della povertà
+
+## LPM
+
+```{r}
+#| code-fold: true
+#| code-summary: 'Show the code'
+#| label: LPM caterpillar plot
+lpmresults$vars <- factor(lpmresults$vars, levels=unique(lpmresults$vars))
+lpmresults$roundEst <- round(lpmresults$Estimate, 2)
+
+gglpm <- lpmresults |> 
+  filter(vars == 'Titolo di studio') |> 
+  ggplot(aes(x=Estimate, y=reg, colour = vars, data_id = roundEst, tooltip = roundEst)) +
+  geom_vline(xintercept = 0,
+             linewidth = 0.4,
+             color = 'gray70') +
+  geom_linerange_interactive(aes(xmin=`2.5 %`,xmax=`97.5 %`), linewidth = .6) +
+  geom_point_interactive(size = 4) +
+  geom_point(colour = 'white', size = 2) +
+  geom_point_interactive(aes(x = `2.5 %`), shape = '|', size = 4) +
+  geom_point_interactive(aes(x = `97.5 %`), shape = '|', size = 4) +
+  labs(x = NULL, y = NULL,
+       title = 'Probabilità di incidenza della povertà relativa in base al titolo di studio del capofamiglia',
+       subtitle = 'Categoria di riferimento: Specializzazione post-laurea',
+       caption = 'Dati: Banca d\'Italia. Elaborazione di Lorenzo Mattioli - Una Regione per Restare') +
+  scale_color_manual(values = met.brewer('Degas')) +
+  theme_minimal(base_family = 'Helvetica') +
+  theme(panel.grid = element_line(),
+        legend.position = 'none',
+        plot.title = element_text(size = 15,
+                                  hjust = 1),
+        plot.subtitle = element_text(hjust = -.065),
+        plot.caption = element_text(size = 8,
+                                    hjust = .5))
+
+girafe(ggobj = gglpm,
+       width_svg = 9,
+       options = list(
+         opts_hover(css = ''), ## CSS code of line we're hovering over
+         opts_hover_inv(css = "opacity:0.3;"), ## CSS code of all other lines
+         opts_tooltip(css = "background-color:white;
+                      color:black;
+                      font-family:Helvetica;
+                      font-style:empty;
+                      padding:8px;
+                      border-radius:10px;",
+                      use_cursor_pos = T),
+         opts_toolbar(position = 'bottomright')))
+
+```
