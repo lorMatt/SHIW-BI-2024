@@ -2,7 +2,9 @@
 title: "Rapporto diseguaglianze e povertà"
 author: "Osservatorio sociale di una Regione per Restare"
 format: 
-  html
+  html:
+    toc: true
+    embed-resources: true
 editor: visual
 execute: 
   warning: false
@@ -215,13 +217,46 @@ lpmresults <- lpmresults |>
 lpmresults$vars <- c('Intercetta', 'Titolo di studio', 'Titolo di studio', 'Titolo di studio', 'Titolo di studio', 'Titolo di studio', 'Sesso', 'Settore economico dell\'occupazione principale', 'Settore economico dell\'occupazione principale', 'Settore economico dell\'occupazione principale', 'Settore economico dell\'occupazione principale', 'Settore economico dell\'occupazione principale', 'Settore economico dell\'occupazione principale', 'Settore economico dell\'occupazione principale', 'Settore economico dell\'occupazione principale', 'Settore economico dell\'occupazione principale')
 ```
 
-# Introduzione
+# Dati, misure
 
-Bla bla bla ringraziamenti cose
+## Disuguaglianze
 
-# Diseguaglianze
+### Reddito
 
-Bla bla bla indici cose Gini funziona con la classe media bla bla pappappero
+La misura di reddito scelta è il reddito disponibile familiare equivalente netto, aggiustato per l'inflazione con deflattore della banca d'Italia.
+
+### Ricchezza
+
+Ricchezza netta pro capite
+
+### Indice di Gini
+
+## Povertà
+
+Soglia di povertà al 60% della mediana (soglia Eurostat).
+
+### Incidenza della povertà
+
+Headcount/pop totale
+
+$$
+\text{Indice di povertà} =
+\frac{
+\text{Numero di persone con reddito inferiore al 60% del reddito mediano}
+}{
+\text{Popolazione totale}
+}
+$$
+
+### Intensità della povertà
+
+$$
+\text{Intensità della povertà} = \text{indice di povertà} \times
+\frac{
+(\text{soglia di povertà} - \text{reddito povero medio})}
+{
+\text{soglia di povertà}}
+$$
 
 ## Diseguaglianze di reddito
 
@@ -279,6 +314,38 @@ girafe(ggobj = incGiniGG,
          opts_toolbar(position = 'bottomright')
        ))
 
+```
+
+### Serie storica
+
+```{r}
+#| code-fold: true
+#| code-summary: 'Show the code'
+#| label: incGini ts
+
+giniInc |>
+  select(year, stratum, value) |> 
+  group_by(stratum) |> 
+  group_modify(~ add_row(.x, year = 2018)) |> 
+  ungroup() |> 
+  ggplot(aes(x = year, y = value)) +
+  geom_line(data = ~. |> filter(stratum == 'Italia')) +
+  geom_line(data = ~. |> filter(stratum == 'Umbria'), linetype = 'dashed') +
+  geom_line(data = ~. |> filter(stratum != 'Umbria' & stratum != 'Italia'),
+            aes(group = stratum), alpha = .1) +
+  geom_point(data = ~. |> filter(stratum == 'Italia')) +
+  geom_point(data = ~. |> filter(stratum == 'Umbria')) +
+  geom_point(data = ~. |> filter(stratum == 'Umbria'), colour = 'white', size = .5) +
+  geom_point(data = ~. |> filter(stratum != 'Umbria' & stratum != 'Italia'),
+             alpha = .1) +
+  labs(title = 'Indice di Gini calcolato sul reddito disponibile delle famiglie',
+       subtitle = 'Serie storica 2000-2020',
+       caption = 'Linea continua per la media italiana. Linea spezzata per i valori umbri. Le linee in grigio sono i valori delle altre regioni.') +
+  scale_x_continuous(breaks = seq(2000, 2020, by = 2)) +
+  theme_minimal() +
+  theme(axis.title = element_blank(),
+        axis.line = element_line(),
+        legend.title = element_blank())
 ```
 
 ### Classifica per regione
@@ -378,6 +445,38 @@ girafe(ggobj = wGiniGG,
                       use_cursor_pos = T),
          opts_toolbar(position = 'bottomright')
        ))
+```
+
+### Serie storica
+
+```{r}
+#| code-fold: true
+#| code-summary: 'Show the code'
+#| label: wGini ts
+
+giniW |>
+  select(year, stratum, value) |> 
+  group_by(stratum) |> 
+  group_modify(~ add_row(.x, year = 2018)) |> 
+  ungroup() |> 
+  ggplot(aes(x = year, y = value)) +
+  geom_line(data = ~. |> filter(stratum == 'Italia')) +
+  geom_line(data = ~. |> filter(stratum == 'Umbria'), linetype = 'dashed') +
+  geom_line(data = ~. |> filter(stratum != 'Umbria' & stratum != 'Italia'),
+            aes(group = stratum), alpha = .1) +
+  geom_point(data = ~. |> filter(stratum == 'Italia')) +
+  geom_point(data = ~. |> filter(stratum == 'Umbria')) +
+  geom_point(data = ~. |> filter(stratum == 'Umbria'), colour = 'white', size = .5) +
+  geom_point(data = ~. |> filter(stratum != 'Umbria' & stratum != 'Italia'),
+             alpha = .1) +
+  labs(title = 'Indice di Gini calcolato sul reddito disponibile delle famiglie',
+       subtitle = 'Serie storica 2000-2020',
+       caption = 'Linea continua per la media italiana. Linea spezzata per i valori umbri. Le linee in grigio sono i valori delle altre regioni.') +
+  scale_x_continuous(breaks = seq(2000, 2020, by = 2)) +
+  theme_minimal() +
+  theme(axis.title = element_blank(),
+        axis.line = element_line(),
+        legend.title = element_blank())
 ```
 
 ### Classifica per regione
@@ -482,6 +581,41 @@ girafe(ggobj = povhGG,
        ))
 ```
 
+### Serie storica
+
+```{r}
+#| code-fold: true
+#| code-summary: 'Show the code'
+#| label: povHCount ts
+
+pov |>
+  summarise(hCount = mean(hCount)) |>
+  mutate(ireg = 'average') |> 
+  bind_rows(pov) |> 
+  select(anno, ireg, hCount) |> 
+  group_by(ireg) |> 
+  group_modify(~ add_row(.x, anno = 2018)) |> 
+  ungroup() |> 
+  ggplot(aes(x = anno, y = hCount)) +
+  geom_line(data = ~. |> filter(ireg == 'average')) +
+  geom_line(data = ~. |> filter(ireg == 'Umbria'), linetype = 'dashed') +
+  geom_line(data = ~. |> filter(ireg != 'Umbria' & ireg != 'average'),
+            aes(group = ireg), alpha = .1) +
+  geom_point(data = ~. |> filter(ireg == 'average')) +
+  geom_point(data = ~. |> filter(ireg == 'Umbria')) +
+  geom_point(data = ~. |> filter(ireg == 'Umbria'), colour = 'white', size = .5) +
+  geom_point(data = ~. |> filter(ireg != 'Umbria' & ireg != 'average'),
+             alpha = .1) +
+  labs(title = 'Incidenza della povertà',
+       subtitle = 'Serie storica 2000-2020',
+       caption = 'Linea continua per la media italiana. Linea spezzata per i valori umbri. Le linee in grigio sono i valori delle altre regioni.') +
+  scale_x_continuous(breaks = seq(2000, 2020, by = 2)) +
+  theme_minimal() +
+  theme(axis.title = element_blank(),
+        axis.line = element_line(),
+        legend.title = element_blank())
+```
+
 ### Classifica per regione
 
 ```{r}
@@ -574,6 +708,41 @@ girafe(ggobj = povhGG,
          opts_toolbar(position = 'bottomright')
        ))
 
+```
+
+### Serie storica
+
+```{r}
+#| code-fold: true
+#| code-summary: 'Show the code'
+#| label: povInt ts
+
+pov |>
+  summarise(povGapIndex = mean(povGapIndex)) |>
+  mutate(ireg = 'average') |> 
+  bind_rows(pov) |> 
+  select(anno, ireg, povGapIndex) |> 
+  group_by(ireg) |> 
+  group_modify(~ add_row(.x, anno = 2018)) |> 
+  ungroup() |> 
+  ggplot(aes(x = anno, y = povGapIndex)) +
+  geom_line(data = ~. |> filter(ireg == 'average')) +
+  geom_line(data = ~. |> filter(ireg == 'Umbria'), linetype = 'dashed') +
+  geom_line(data = ~. |> filter(ireg != 'Umbria' & ireg != 'average'),
+            aes(group = ireg), alpha = .1) +
+  geom_point(data = ~. |> filter(ireg == 'average')) +
+  geom_point(data = ~. |> filter(ireg == 'Umbria')) +
+  geom_point(data = ~. |> filter(ireg == 'Umbria'), colour = 'white', size = .5) +
+  geom_point(data = ~. |> filter(ireg != 'Umbria' & ireg != 'average'),
+             alpha = .1) +
+  labs(title = 'Intensità della povertà',
+       subtitle = 'Serie storica 2000-2020',
+       caption = 'Linea continua per la media italiana. Linea spezzata per i valori umbri. Le linee in grigio sono i valori delle altre regioni.') +
+  scale_x_continuous(breaks = seq(2000, 2020, by = 2)) +
+  theme_minimal() +
+  theme(axis.title = element_blank(),
+        axis.line = element_line(),
+        legend.title = element_blank())
 ```
 
 ### Classifica per regione
