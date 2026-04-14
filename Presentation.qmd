@@ -621,6 +621,45 @@ pov |>
 
 ```
 
+## Incidenza della povertà per età
+
+```{r}
+#| code-fold: true
+#| code-summary: 'Show the code'
+#| label: povhCount per età
+
+pdata_cut <- pdata |> 
+  filter(anno %in% c(2000, 2020)) |> 
+  mutate(age_bin = cut(eta, breaks = c(0, 20, 40, 60, 80, 120),
+                       include.lowest = TRUE))  # cut once on full data
+
+italy <- pdata_cut |> 
+  summarise(pov_rate = mean(pov, na.rm = TRUE), .by = c(anno, age_bin))
+
+umbria <- pdata_cut |> 
+  filter(ireg == "Umbria") |> 
+  summarise(pov_rate = mean(pov, na.rm = TRUE), .by = c(anno, age_bin))
+
+ggplot(mapping = aes(age_bin, pov_rate)) +
+  geom_col(aes(fill = "Italy"), data = italy, alpha = 0.25, width = 0.75) +
+  geom_col(aes(fill = "Umbria"), data = umbria, alpha = 0.85, width = 0.5) +
+  facet_wrap(~anno) +
+  # scale_x_binned(n.breaks = 5) +
+  labs(title = 'Indice di povertà per età',
+       subtitle = 'Umbria e Italia, 2000 - 2020') +
+  scale_y_continuous(expand = c(0, 0)) +
+  scale_fill_manual(values = c("Italy" = "gray60", "Umbria" = "darkred")) +
+  theme_minimal() +
+  theme(
+    axis.title = element_blank(),
+    axis.line = element_line(),
+    legend.title = element_blank(),
+    legend.position = "bottom"
+  )
+  
+  
+```
+
 # Intensità della povertà
 
 ## Mappatura
@@ -750,54 +789,58 @@ pov |>
   )
 ```
 
-# Investigare i fattori di rischio della povertà
-
-## LPM
+### Intensità della povertà per età
 
 ```{r}
 #| code-fold: true
 #| code-summary: 'Show the code'
-#| label: LPM caterpillar plot
-lpmresults$vars <- factor(lpmresults$vars, levels=unique(lpmresults$vars))
-lpmresults$roundEst <- round(lpmresults$Estimate, 2)
+#| label: povInt per età
 
-gglpm <- lpmresults |> 
-  filter(vars == 'Titolo di studio') |> 
-  ggplot(aes(x=Estimate, y=reg, colour = vars, data_id = roundEst, tooltip = roundEst)) +
-  geom_vline(xintercept = 0,
-             linewidth = 0.4,
-             color = 'gray70') +
-  geom_linerange_interactive(aes(xmin=`2.5 %`,xmax=`97.5 %`), linewidth = .6) +
-  geom_point_interactive(size = 4) +
-  geom_point(colour = 'white', size = 2) +
-  geom_point_interactive(aes(x = `2.5 %`), shape = '|', size = 4) +
-  geom_point_interactive(aes(x = `97.5 %`), shape = '|', size = 4) +
-  labs(x = NULL, y = NULL,
-       title = 'Probabilità di incidenza della povertà relativa in base al titolo di studio del capofamiglia',
-       subtitle = 'Categoria di riferimento: Specializzazione post-laurea',
-       caption = 'Dati: Banca d\'Italia. Elaborazione di Lorenzo Mattioli - Una Regione per Restare') +
-  scale_color_manual(values = met.brewer('Degas')) +
-  theme_minimal(base_family = 'Helvetica') +
-  theme(panel.grid = element_line(),
-        legend.position = 'none',
-        plot.title = element_text(size = 15,
-                                  hjust = 1),
-        plot.subtitle = element_text(hjust = -.065),
-        plot.caption = element_text(size = 8,
-                                    hjust = .5))
+pov_lines <- pov |> 
+  ungroup() |> 
+  distinct(anno, ireg, povLine)
 
-girafe(ggobj = gglpm,
-       width_svg = 9,
-       options = list(
-         opts_hover(css = ''), ## CSS code of line we're hovering over
-         opts_hover_inv(css = "opacity:0.3;"), ## CSS code of all other lines
-         opts_tooltip(css = "background-color:white;
-                      color:black;
-                      font-family:Helvetica;
-                      font-style:empty;
-                      padding:8px;
-                      border-radius:10px;",
-                      use_cursor_pos = T),
-         opts_toolbar(position = 'bottomright')))
+italy_gap <- pdata_cut |> 
+  group_by(anno, age_bin) |> 
+  summarise(
+    hCount = weighted.mean(pov, w = peso),
+    avPoor = weightedMean(eqhincome[pov == 1], weights = peso[pov == 1]),
+    .groups = "drop"
+  ) |> 
+  left_join(
+    pov_lines |> summarise(povLine = weighted.mean(povLine), .by = anno),
+    by = "anno"
+  ) |> 
+  mutate(povGapIndex = hCount * (povLine - avPoor) / povLine)
 
+umbria_gap <- pdata_cut |> 
+  filter(ireg == "Umbria") |> 
+  group_by(anno, age_bin) |> 
+  summarise(
+    hCount = weighted.mean(pov, w = peso),
+    avPoor = weightedMean(eqhincome[pov == 1], weights = peso[pov == 1]),
+    .groups = "drop"
+  ) |> 
+  left_join(
+    pov_lines |> filter(ireg == "Umbria") |> select(anno, povLine),
+    by = "anno"
+  ) |> 
+  mutate(povGapIndex = hCount * (povLine - avPoor) / povLine)
+
+ggplot(mapping = aes(age_bin, povGapIndex)) +
+  geom_col(aes(fill = "Italy"), data = italy_gap, alpha = 0.25, width = 0.75) +
+  geom_col(aes(fill = "Umbria"), data = umbria_gap, alpha = 0.85, width = 0.5) +
+  facet_wrap(~anno) +
+  # scale_x_binned(n.breaks = 5) +
+  labs(title = 'Intensità della povertà per età',
+       subtitle = 'Umbria e Italia, 2000 - 2020') +
+  scale_y_continuous(expand = c(0, 0)) +
+  scale_fill_manual(values = c("Italy" = "gray60", "Umbria" = "darkred")) +
+  theme_minimal() +
+  theme(
+    axis.title = element_blank(),
+    axis.line = element_line(),
+    legend.title = element_blank(),
+    legend.position = "bottom"
+  )
 ```
