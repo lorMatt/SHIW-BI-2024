@@ -789,7 +789,7 @@ pov |>
   )
 ```
 
-### Intensità della povertà per età
+## Intensità della povertà per età
 
 ```{r}
 #| code-fold: true
