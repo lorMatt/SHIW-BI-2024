@@ -690,18 +690,18 @@ pdata_cut <- pdata |>
                        include.lowest = TRUE))  # cut once on full data
 
 italy <- pdata_cut |> 
-  summarise(pov_rate = mean(pov, na.rm = TRUE), .by = c(anno, age_bin))
+  summarise(pov_rate = weighted.mean(pov, peso, na.rm = TRUE), .by = c(anno, age_bin))
 
 umbria <- pdata_cut |> 
   filter(ireg == "Umbria") |> 
-  summarise(pov_rate = mean(pov, na.rm = TRUE), .by = c(anno, age_bin))
+  summarise(pov_rate = weighted.mean(pov, peso, na.rm = TRUE), .by = c(anno, age_bin))
 
 ggplot(mapping = aes(age_bin, pov_rate)) +
   geom_col(aes(fill = "Italy"), data = italy, alpha = 0.25, width = 0.75) +
   geom_col(aes(fill = "Umbria"), data = umbria, alpha = 0.85, width = 0.5) +
   facet_wrap(~anno) +
   # scale_x_binned(n.breaks = 5) +
-  labs(title = 'Indice di povertà per età',
+  labs(title = 'Indice di povertà relativa per età',
        subtitle = 'Umbria e Italia, 2000 - 2020') +
   scale_y_continuous(expand = c(0, 0)) +
   scale_fill_manual(values = c("Italy" = "gray60", "Umbria" = "darkred")) +
@@ -889,7 +889,8 @@ ggplot(mapping = aes(age_bin, povGapIndex)) +
   facet_wrap(~anno) +
   # scale_x_binned(n.breaks = 5) +
   labs(title = 'Intensità della povertà per età',
-       subtitle = 'Umbria e Italia, 2000 - 2020') +
+       subtitle = 'Umbria e Italia, 2000 - 2020',
+       caption = 'Calcolato su incidenza della povertà relativa') +
   scale_y_continuous(expand = c(0, 0)) +
   scale_fill_manual(values = c("Italy" = "gray60", "Umbria" = "darkred")) +
   theme_minimal() +
