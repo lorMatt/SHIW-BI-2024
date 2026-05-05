@@ -219,9 +219,9 @@ lpmresults$vars <- c('Intercetta', 'Titolo di studio', 'Titolo di studio', 'Tito
 
 [Inchiesta sui redditi e la ricchezza delle famiglie - Banca d'Italia](https://www.bancaditalia.it/statistiche/tematiche/indagini-famiglie-imprese/bilanci-famiglie/index.html?com.dotmarketing.htmlpage.language=102)
 
--   Cross-section ripetuta
+- Cross-section ripetuta
 
--   Campione probabilistico rappresentativo della popolazione italiana
+- Campione probabilistico rappresentativo della popolazione italiana
 
 # Diseguaglianze di reddito
 
@@ -558,6 +558,7 @@ pov |>
   select(anno, ireg, hCount) |> 
   group_by(ireg) |> 
   group_modify(~ add_row(.x, anno = 2018)) |> 
+  group_modify(~ add_row(.x, anno = 2006)) |> 
   ungroup() |> 
   ggplot(aes(x = anno, y = hCount)) +
   geom_line(data = ~. |> filter(ireg == 'average')) +
@@ -727,6 +728,7 @@ pov |>
   select(anno, ireg, povGapIndex) |> 
   group_by(ireg) |> 
   group_modify(~ add_row(.x, anno = 2018)) |> 
+  group_modify(~ add_row(.x, anno = 2006)) |> 
   ungroup() |> 
   ggplot(aes(x = anno, y = povGapIndex)) +
   geom_line(data = ~. |> filter(ireg == 'average')) +

@@ -241,17 +241,13 @@ Ricchezza netta pro capite
 
 ![](images/clipboard-2881284955.png){width="441"}
 
-$$
-G = \frac{
+$$G = \frac{
 A
 }{
 A + B
-}
-$$
+}$$
 
-$$
-g = \frac{\sum_i \sum_j |x_i - x_j|}{n(n-1)} \quad \text{con } i \neq j
-$$
+$$g = \frac{\sum_i \sum_j |x_i - x_j|}{n(n-1)} \quad \text{con } i \neq j$$
 
 ## Povertà
 
@@ -261,24 +257,20 @@ Soglia di povertà al 60% della mediana (soglia Eurostat).
 
 Headcount/pop totale
 
-$$
-\text{Indice di povertà} =
+$$\text{Indice di povertà} =
 \frac{
 \text{Numero di persone con reddito inferiore al 60% del reddito mediano}
 }{
 \text{Popolazione totale}
-}
-$$
+}$$
 
 ### Intensità della povertà
 
-$$
-\text{Intensità della povertà} = \text{indice di povertà} \times
+$$\text{Intensità della povertà} = \text{indice di povertà} \times
 \frac{
 (\text{soglia di povertà} - \text{reddito povero medio})}
 {
-\text{soglia di povertà}}
-$$
+\text{soglia di povertà}}$$
 
 ## Diseguaglianze di reddito
 
@@ -615,6 +607,7 @@ pov |>
   select(anno, ireg, hCount) |> 
   group_by(ireg) |> 
   group_modify(~ add_row(.x, anno = 2018)) |> 
+  group_modify(~ add_row(.x, anno = 2006)) |> 
   ungroup() |> 
   ggplot(aes(x = anno, y = hCount)) +
   geom_line(data = ~. |> filter(ireg == 'average')) +
@@ -783,6 +776,7 @@ pov |>
   select(anno, ireg, povGapIndex) |> 
   group_by(ireg) |> 
   group_modify(~ add_row(.x, anno = 2018)) |> 
+  group_modify(~ add_row(.x, anno = 2006)) |> 
   ungroup() |> 
   ggplot(aes(x = anno, y = povGapIndex)) +
   geom_line(data = ~. |> filter(ireg == 'average')) +
